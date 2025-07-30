@@ -16,7 +16,7 @@
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('sw.js')
             .then(registration => console.log('ServiceWorker registration successful'))
-            .catch(err => console.log('ServiceWorker registration failed (expected on file:///): ', err));
+            .catch(err => console.log('ServiceWorker registration failed (likely due to file:///): ', err));
         });
       }
     </script>
@@ -117,15 +117,15 @@
         .btn-success { background-color: var(--success); }
         .btn-success:hover { background-color: #27ae60; }
         
-     .app-header {
-        background-color: var(--primary);
-        padding: 15px 25px;
-        color: white;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
+        .app-header {
+            background-color: var(--primary);
+            padding: 15px 25px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
         .app-header h1 { font-size: 1.6em; margin:0; color: white; font-weight: 700;}
 
         .dropdown-menu-container { position: relative; }
@@ -198,14 +198,43 @@
             margin-bottom: 25px; box-shadow: var(--card-shadow); border: 1px solid var(--border-color);
             display: flex; align-items: center; flex-wrap: wrap; gap: 15px;
         }
-        .dashboard-controls .form-group { margin-bottom: 0; }
+        .dashboard-controls .form-group { margin-bottom: 0; flex: 1; min-width: 180px; }
+        .dashboard-controls .control-buttons { margin-left: auto; display: flex; gap: 10px; }
+
 
         .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 25px; margin-bottom: 25px; }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: var(--card-shadow); border: 1px solid var(--border-color); }
+        .card { 
+            background: white; border-radius: 12px; padding: 20px; box-shadow: var(--card-shadow); 
+            border: 1px solid var(--border-color); display: flex; flex-direction: column; 
+        }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; }
-        .card-title { font-size: 1.1rem; font-weight: 500; color: var(--primary); }
-        .chart-container { position: relative; min-height: 280px; width: 100%; }
-        .col-6 { grid-column: span 6; } .col-4 { grid-column: span 4; } .col-8 { grid-column: span 8; } .col-12 { grid-column: span 12; }
+        .card-title { font-size: 1.1rem; font-weight: 500; color: var(--primary); margin-right: auto; }
+        .card-body { flex-grow: 1; position: relative; }
+        .chart-container, .table-container, .special-container { position: relative; width: 100%; height: 100%; min-height: 280px; }
+        .table-container { max-height: 400px; overflow-y: auto; }
+        .col-12 { grid-column: span 12; } .col-8 { grid-column: span 8; } .col-6 { grid-column: span 6; } .col-4 { grid-column: span 4; }
+        
+        /* Edit Mode & Widget Controls */
+        .widget-header-controls { display: flex; align-items: center; gap: 10px; }
+        .download-chart-btn { background-color: var(--light); color: var(--primary); border: 1px solid var(--border-color); padding: 4px 8px; font-size: 0.8rem; margin: 0; }
+        .download-chart-btn:hover { background-color: var(--border-color); }
+        .delete-widget-btn { background-color: var(--danger); padding: 4px 8px; font-size: 0.8rem; margin: 0; }
+        
+        /* Modal Styles */
+        .modal {
+            display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%;
+            overflow: auto; background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: #fefefe; margin: 10% auto; padding: 25px; border: 1px solid #888;
+            width: 80%; max-width: 600px; border-radius: var(--border-radius); box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); margin-bottom: 20px; }
+        .modal-title { margin: 0; }
+        .close-modal { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close-modal:hover, .close-modal:focus { color: black; text-decoration: none; }
+        .form-row { display: flex; gap: 20px; } 
+        .form-row .form-group { flex: 1; }
         
         .dashboard-alerts-container { max-height: 400px; overflow-y: auto; padding-right: 10px; } 
         .alert-dashboard-item { border-left-width: 4px; border-left-style: solid; padding: 12px 18px; margin-bottom: 12px; border-radius: var(--border-radius); display: flex; align-items: flex-start; transition: box-shadow .2s ease; }
@@ -238,12 +267,6 @@
         .badge-medium { background-color: #fff8e1; color: #f39c12; border-color: #f39c12; } 
         .badge-low { background-color: #e8f5e9; color: var(--success); border-color: var(--success); }
         .badge-info { background-color: #e3f2fd; color: var(--info); border-color: var(--info); }
-        .badge-country { background-color: var(--primary); color: white; }
-        .badge-sector { background-color: var(--secondary); color: white; }
-        .badge-estado-activo { background-color: var(--danger); color: white; }
-        .badge-estado-mitigado { background-color: var(--success); color: white; }
-        .badge-estado-investigacion { background-color: var(--warning); color: var(--dark); }
-        .badge-estado-poc { background-color: var(--info); color: white; }
         
         .form-container {
             border: 1px solid var(--border-color); padding: 25px; border-radius: var(--border-radius); margin-bottom: 25px;
@@ -257,9 +280,7 @@
         .search-box { margin-bottom: 20px; } 
         .search-box input { max-width: 400px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--border-radius); }
         .action-buttons { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap;}
-
-        .form-row { display: flex; gap: 20px; } 
-        .form-row .form-group { flex: 1; }
+        
         .form-title-action { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .form-title-action h2 { margin: 0; }
         .form-title-action button { margin-right: 0; }
@@ -275,6 +296,7 @@
             .app-header h1 { font-size: 1.2em; }
             .menu-toggle-btn { font-size: 0.9em; padding: 6px 10px; }
             .dashboard-header, .dashboard-controls { flex-direction: column; align-items: stretch;}
+            .dashboard-controls .control-buttons { margin-left: 0; margin-top: 15px; justify-content: flex-start; }
             .header-stats { flex-direction: row; gap: 6px; margin-top: 15px; align-items: stretch; width: 100%; justify-content: space-around;}
             .stat-box { min-width: 0; flex-basis: calc(33.33% - 8px); padding: 6px;} 
             .stat-value { font-size: 16px; }
@@ -286,6 +308,7 @@
          @media (max-width: 480px) {
             .header-stats { gap: 5px; }
             .stat-box { flex-basis: calc(50% - 5px); } 
+            .modal-content { width: 95%; margin: 5% auto; }
          }
     </style>
 </head>
@@ -341,28 +364,95 @@
                         </div>
                         <button id="applyDashboardFilterBtn" class="btn-success"><i class="fa-solid fa-filter"></i>Aplicar Filtro</button>
                         <button id="resetDashboardFilterBtn"><i class="fa-solid fa-arrows-rotate"></i>Resetear</button>
+                        <div class="control-buttons">
+                            <button id="toggleEditModeBtn"><i class="fa-solid fa-edit"></i> Editar Dashboard</button>
+                            <button id="addWidgetBtn" class="btn-success" style="display: none;"><i class="fa-solid fa-plus"></i> Añadir Nuevo Elemento</button>
+                        </div>
                     </div>
 
-                    <div class="grid">
-                        <div class="card col-12"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-timeline" style="margin-right: 10px; color: var(--secondary)"></i>Línea de Tiempo de Amenazas</h2></div><div class="chart-container" style="height: 350px;"><canvas id="timelineChart"></canvas></div></div>
-                        <div class="card col-6"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-bell" style="margin-right: 10px; color: var(--secondary)"></i>Últimas Alertas Registradas</h2></div><div class="dashboard-alerts-container" id="dashboardAllAlertsContainer"><p>No hay alertas registradas.</p></div></div>
-                        <div class="card col-6"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-chart-column" style="margin-right: 10px; color: var(--secondary)"></i>Alertas por Criticidad</h2></div><div class="chart-container"><canvas id="alertsBySeverityChart"></canvas></div></div>
-                        <div class="card col-4"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-chart-pie" style="margin-right: 10px; color: var(--secondary)"></i>Incidentes por Tipo</h2></div><div class="chart-container"><canvas id="incidentsTypeChart"></canvas></div></div>
-                        <div class="card col-4"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-chart-pie" style="margin-right: 10px; color: var(--secondary)"></i>Incidentes por Sector</h2></div><div class="chart-container"><canvas id="incidentsSectorChart"></canvas></div></div>
-                        <div class="card col-4"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-building-shield" style="margin-right: 10px; color: var(--secondary)"></i>Top 5 Entidades Afectadas</h2></div><div class="chart-container"><canvas id="topAffectedEntitiesChart"></canvas></div></div>
-                        <div class="card col-4"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-radar" style="margin-right: 10px; color: var(--secondary)"></i>CVEs Recientes (Radar)</h2></div><div class="chart-container"><canvas id="severityChart"></canvas></div></div>
-                        <div class="card col-4"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-chart-pie" style="margin-right: 10px; color: var(--secondary)"></i>CVEs por Estado</h2></div><div class="chart-container"><canvas id="cvesByStatusChart"></canvas></div></div>
-                        <div class="card col-4"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-chart-pie" style="margin-right: 10px; color: var(--secondary)"></i>Zero Days por Estado</h2></div><div class="chart-container"><canvas id="zeroDaysByStatusChart"></canvas></div></div>
-                        <div class="card col-6"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-chart-pie" style="margin-right: 10px; color: var(--secondary)"></i>Exploits por Tipo</h2></div><div class="chart-container"><canvas id="exploitsByTypeChart"></canvas></div></div>
-                        <div class="card col-6"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-laptop-code" style="margin-right: 10px; color: var(--secondary)"></i>Top 5 Plataformas (Exploits)</h2></div><div class="chart-container"><canvas id="topPlatformsExploitsChart"></canvas></div></div>
-                        <div class="card col-4"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-chart-pie" style="margin-right: 10px; color: var(--secondary)"></i>Fuentes de Intel por Tipo</h2></div><div class="chart-container"><canvas id="fuentesByTypeChart"></canvas></div></div>
-                        <div class="card col-4"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-chart-column" style="margin-right: 10px; color: var(--secondary)"></i>Mitigaciones por Categoría</h2></div><div class="chart-container"><canvas id="mitigacionesByCatChart"></canvas></div></div>
-                        <div class="card col-4"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-chart-pie" style="margin-right: 10px; color: var(--secondary)"></i>Mitigaciones por Prioridad</h2></div><div class="chart-container"><canvas id="mitigacionesByPrioChart"></canvas></div></div>
-                        <div class="card col-12"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-bug-slash" style="margin-right: 10px; color: var(--secondary)"></i>Últimas Vulnerabilidades (CVEs)</h2></div><table id="dashboardCVEsTable"><thead><tr><th>ID</th><th>Aplicativo</th><th>Severidad</th><th>Estado</th><th>CVSS</th></tr></thead><tbody></tbody></table></div>
-                        <div class="card col-12"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-server" style="margin-right: 10px; color: var(--secondary)"></i>Incidentes Detectados Recientes</h2></div><table id="dashboardIncidentsTable"><thead><tr><th>Fecha</th><th>Entidad</th><th>País</th><th>Sector</th><th>Tipo</th><th>Descripción</th></tr></thead><tbody></tbody></table></div>
-                        <div class="card col-6"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-star" style="margin-right: 10px; color: var(--secondary)"></i>ZeroDays Recientes</h2></div><table id="dashboardZeroDaysTable"><thead><tr><th>ID</th><th>Nombre</th><th>Plataforma</th><th>Fecha</th><th>Estado</th><th>CVSS</th></tr></thead><tbody></tbody></table></div>
-                        <div class="card col-6"><div class="card-header"><h2 class="card-title"><i class="fa-solid fa-terminal" style="margin-right: 10px; color: var(--secondary)"></i>Exploits Recientes</h2></div><table id="dashboardExploitsTable"><thead><tr><th>Fecha</th><th>Nombre</th><th>Tipo</th><th>Plataforma</th></tr></thead><tbody></tbody></table></div>
+                    <!-- DYNAMIC DASHBOARD GRID -->
+                    <div id="dashboardGrid" class="grid">
+                        <!-- Widgets will be dynamically inserted here -->
                     </div>
+                </div>
+            </div>
+
+            <!-- Add Widget Modal -->
+            <div id="addWidgetModal" class="modal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">Añadir Nuevo Elemento al Dashboard</h2>
+                        <span class="close-modal">&times;</span>
+                    </div>
+                    <form id="addWidgetForm">
+                        <div class="form-group">
+                            <label for="widgetTitle">Título del Elemento</label>
+                            <input type="text" id="widgetTitle" required placeholder="Ej: Incidentes por Sector">
+                        </div>
+                        <div class="form-row">
+                             <div class="form-group">
+                                <label for="widgetType">Tipo de Elemento</label>
+                                <select id="widgetType" required>
+                                    <option value="">-- Seleccione --</option>
+                                    <option value="chart">Gráfico</option>
+                                    <option value="table">Tabla</option>
+                                    <option value="special">Componente Especial</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="widgetSize">Tamaño</label>
+                                <select id="widgetSize" required>
+                                    <option value="col-4">Pequeño (1/3)</option>
+                                    <option value="col-6" selected>Mediano (1/2)</option>
+                                    <option value="col-8">Grande (2/3)</option>
+                                    <option value="col-12">Ancho Completo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Fields for Chart Type -->
+                        <div id="chartOptions" class="form-section" style="display:none;">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="chartType">Tipo de Gráfico</label>
+                                    <select id="chartType">
+                                        <option value="bar">Barras</option>
+                                        <option value="pie">Torta (Pie)</option>
+                                        <option value="doughnut">Anillo (Doughnut)</option>
+                                        <option value="radar">Radar</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="chartDataSource">Fuente de Datos</label>
+                                    <select id="chartDataSource"></select>
+                                </div>
+                            </div>
+                             <div class="form-group">
+                                <label for="chartGroupBy">Agrupar Por Campo</label>
+                                <select id="chartGroupBy"></select>
+                            </div>
+                        </div>
+
+                        <!-- Fields for Table Type -->
+                        <div id="tableOptions" class="form-section" style="display:none;">
+                            <div class="form-group">
+                                <label for="tableDataSource">Mostrar Datos de</label>
+                                <select id="tableDataSource"></select>
+                            </div>
+                        </div>
+                        
+                        <!-- Fields for Special Component Type -->
+                        <div id="specialOptions" class="form-section" style="display:none;">
+                            <div class="form-group">
+                                <label for="specialComponentSource">Seleccionar Componente</label>
+                                <select id="specialComponentSource"></select>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button type="submit" class="btn-success"><i class="fa-solid fa-plus"></i> Añadir Elemento</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
@@ -579,6 +669,7 @@
                     <button onclick="exportarExcel()"><i class="fa-solid fa-file-excel"></i>Exportar a Excel</button>
                     <button onclick="document.getElementById('excelImporter').click()"><i class="fa-solid fa-file-import"></i>Importar desde Excel</button>
                     <input type="file" id="excelImporter" style="display:none" onchange="handleExcelImport(event)" accept=".xlsx, .xls">
+                     <button onclick="descargarCorreoHTML()"><i class="fa-solid fa-envelope"></i>Descargar Correo HTML</button>
                     <button onclick="generarReporteCompletoHTML()"><i class="fa-solid fa-eye"></i>Previsualizar Reporte</button>
                 </div>
                 <div id="previewReporte" style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; background: #f9f9f9; max-height: 600px; overflow-y: auto;">Presione "Previsualizar Reporte HTML" para ver.</div>
@@ -592,44 +683,113 @@
     // CONFIGURACIÓN INICIAL Y VARIABLES GLOBALES
     // =============================================================================
     const API_BASE_URL = 'http://localhost:3000/api';
-    let ALL_DATA_CACHE = {}; // Caché para todos los datos, para no llamar a la API constantemente.
+    let ALL_DATA_CACHE = {}; 
     let chartInstances = {}; 
     const ROOT_CSS_VARIABLES = {};
     document.getElementById('currentYear').textContent = new Date().getFullYear();
 
     // =============================================================================
+    // GESTIÓN DEL DASHBOARD DINÁMICO
+    // =============================================================================
+    let dashboardState = {
+        isEditMode: false,
+        layoutConfig: []
+    };
+
+    const DATA_SOURCES = {
+        incidentes: { label: 'Incidentes', fields: {tipo: 'Tipo', sector: 'Sector', pais: 'País', actor: 'Actor de Amenazas'} },
+        exploits: { label: 'Exploits', fields: {tipo: 'Tipo', plataforma: 'Plataforma'} },
+        'zero-days': { label: 'Zero Days', fields: {estado: 'Estado', plataforma: 'Plataforma'} },
+        cves: { label: 'CVEs', fields: {estado: 'Estado', aplicativo: 'Aplicativo'} },
+        alertas: { label: 'Alertas', fields: {criticidad: 'Criticidad'} },
+        fuentes: { label: 'Fuentes Intel', fields: {tipo: 'Tipo'} },
+        mitigaciones: { label: 'Mitigaciones', fields: {categoria: 'Categoría', prioridad: 'Prioridad'} }
+    };
+
+    const SPECIAL_COMPONENTS = {
+        timelineChart: { label: 'Línea de Tiempo de Amenazas', defaultTitle: 'Línea de Tiempo de Amenazas', isDeletable: false },
+        dashboardAllAlerts: { label: 'Lista de Últimas Alertas', defaultTitle: 'Últimas Alertas Registradas', isDeletable: true }
+    };
+    
+    const DEFAULT_LAYOUT = [
+        { id: 'timeline-1', type: 'special', component: 'timelineChart', title: 'Línea de Tiempo de Amenazas', size: 'col-12', isDeletable: false },
+        { id: 'alerts-list-1', type: 'special', component: 'dashboardAllAlerts', title: 'Últimas Alertas Registradas', size: 'col-6', isDeletable: true },
+        { id: 'alerts-severity-1', type: 'chart', chartType: 'bar', source: 'alertas', groupBy: 'criticidad', title: 'Alertas por Criticidad', size: 'col-6', isDeletable: true },
+        { id: 'incidents-type-1', type: 'chart', chartType: 'doughnut', source: 'incidentes', groupBy: 'tipo', title: 'Incidentes por Tipo', size: 'col-4', isDeletable: true },
+        { id: 'incidents-sector-1', type: 'chart', chartType: 'pie', source: 'incidentes', groupBy: 'sector', title: 'Incidentes por Sector', size: 'col-4', isDeletable: true },
+        { id: 'cve-status-1', type: 'chart', chartType: 'doughnut', source: 'cves', groupBy: 'estado', title: 'CVEs por Estado', size: 'col-4', isDeletable: true },
+        { id: 'incidents-table-1', type: 'table', source: 'incidentes', title: 'Incidentes Recientes', size: 'col-12', isDeletable: true },
+        { id: 'cve-table-1', type: 'table', source: 'cves', title: 'CVEs Recientes', size: 'col-12', isDeletable: true }
+    ];
+
+    function loadLayout() {
+        const savedLayout = localStorage.getItem('dashboardLayout');
+        if (savedLayout) {
+            dashboardState.layoutConfig = JSON.parse(savedLayout);
+        } else {
+            dashboardState.layoutConfig = JSON.parse(JSON.stringify(DEFAULT_LAYOUT));
+        }
+    }
+
+    function saveLayout() {
+        localStorage.setItem('dashboardLayout', JSON.stringify(dashboardState.layoutConfig));
+    }
+
+    function toggleEditMode() {
+        dashboardState.isEditMode = !dashboardState.isEditMode;
+        const btn = document.getElementById('toggleEditModeBtn');
+        const addBtn = document.getElementById('addWidgetBtn');
+        if (dashboardState.isEditMode) {
+            btn.innerHTML = `<i class="fa-solid fa-save"></i> Guardar Cambios`;
+            btn.classList.add('btn-success');
+            addBtn.style.display = 'inline-flex';
+        } else {
+            btn.innerHTML = `<i class="fa-solid fa-edit"></i> Editar Dashboard`;
+            btn.classList.remove('btn-success');
+            addBtn.style.display = 'none';
+            saveLayout();
+        }
+        renderDynamicDashboard();
+    }
+
+    function addWidget(widgetConfig) {
+        dashboardState.layoutConfig.push(widgetConfig);
+        renderDynamicDashboard();
+    }
+
+    function deleteWidget(widgetId) {
+        if (confirm('¿Está seguro de que desea eliminar este elemento del dashboard?')) {
+            dashboardState.layoutConfig = dashboardState.layoutConfig.filter(w => w.id !== widgetId);
+            renderDynamicDashboard();
+        }
+    }
+
+    function downloadChartImage(chartId, title) {
+        const chart = chartInstances[chartId];
+        if (chart) {
+            const image = chart.toBase64Image();
+            const link = document.createElement('a');
+            link.href = image;
+            link.download = `${title.replace(/ /g, '_')}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else {
+            console.error('No se encontró la instancia del gráfico para descargar:', chartId);
+        }
+    }
+    
+    // =============================================================================
     // LÓGICA DE CONEXIÓN CON API Y GESTIÓN DE DATOS (CRUD)
     // =============================================================================
-
     async function guardarDato(tipo, dato) {
-        const id = dato._id; 
-        if (id) {
-            delete dato._id;
-        }
-
+        const id = dato._id; if (id) { delete dato._id; }
         const url = id ? `${API_BASE_URL}/${tipo}/${id}` : `${API_BASE_URL}/${tipo}`;
         const method = id ? 'PUT' : 'POST';
-
         try {
-            const response = await fetch(url, {
-                method: method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dato)
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}`);
-            }
-            
-            await fetchAndCacheAllData();
-            const uiType = tipo === 'zero-days' ? 'zeroDays' : tipo;
-            await mostrarDatos(uiType);
-
-            if (document.getElementById('dashboard').classList.contains('active')) {
-                await renderDashboard();
-            }
-
+            const response = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dato) });
+            if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `Error ${response.status}`); }
+            await fetchAndCacheAllData(true);
         } catch (error) {
             console.error(`Error al guardar en '${tipo}':`, error);
             alert(`No se pudo guardar el registro: ${error.message}`);
@@ -639,121 +799,21 @@
 
     async function eliminarRegistro(tipo, id) {
         if (!confirm('¿Estás seguro de que quieres eliminar este registro?')) return;
-
+        const endpoint = tipo === 'zeroDays' ? 'zero-days' : tipo;
         try {
-            const response = await fetch(`${API_BASE_URL}/${tipo}/${id}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok && response.status !== 204) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `Error ${response.status}`);
-            }
-            
-            await fetchAndCacheAllData();
-            const uiType = tipo === 'zero-days' ? 'zeroDays' : tipo;
-            await mostrarDatos(uiType);
-
-            if (document.getElementById('dashboard').classList.contains('active')) {
-               await renderDashboard();
-            }
-            console.log(`Registro ${id} de ${tipo} eliminado con éxito.`);
-
+            const response = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, { method: 'DELETE' });
+            if (!response.ok && response.status !== 204) { const errorData = await response.json(); throw new Error(errorData.message || `Error ${response.status}`);}
+            await fetchAndCacheAllData(true);
+            await mostrarDatos(tipo);
         } catch (error) {
-            console.error(`Error al eliminar en ${tipo}:`, error);
+            console.error(`Error al eliminar en ${endpoint}:`, error);
             alert(`No se pudo eliminar el registro: ${error.message}`);
         }
     }
 
-   async function mostrarDatos(tipo) {
-    const endpoint = tipo === 'zeroDays' ? 'zero-days' : tipo;
-    const tablaId = tipo === 'cves' ? 'tablaCVEs' : `tabla${capitalFirstLetter(tipo)}`;
-    
-    const tbody = document.querySelector(`#${tablaId} tbody`);
-    if (!tbody) {
-        console.error(`Error: No se encontró el cuerpo de la tabla con id: #${tablaId}`);
-        return;
-    }
-    
-    const datos = ALL_DATA_CACHE[endpoint] || [];
-    tbody.innerHTML = '';
-
-    const formatDisplayDate = (isoDate) => isoDate ? new Date(isoDate).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : 'N/A';
-
-    datos.forEach((dato) => {
-        const row = document.createElement('tr');
-        let cells = '';
-        
-        const itemIdentifier = dato._id;
-        const refLink = dato.url ? ` <a href="${dato.url}" target="_blank" rel="noopener noreferrer" title="${dato.url}"><i class="fa-solid fa-link fa-xs"></i></a>` : '';
-
-        switch (tipo) {
-            case 'incidentes':
-                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.entidad || ''}${refLink}</td><td><span class="badge badge-country">${dato.pais || 'N/A'}</span></td><td><span class="badge badge-sector">${dato.sector || 'N/A'}</span></td><td>${dato.tipo || ''}</td><td>${dato.actor || 'Desconocido'}</td>`;
-                break;
-            case 'exploits':
-                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.nombre || ''}${refLink}</td><td>${dato.tipo || ''}</td><td>${dato.plataforma || ''}</td><td>${dato.cve || 'N/A'}</td>`;
-                break;
-            case 'zeroDays':
-                cells = `<td>${dato.idZD || 'N/A'}</td><td>${dato.nombre || ''}${refLink}</td><td>${dato.plataforma || ''}</td><td>${formatDisplayDate(dato.fecha)}</td><td><span class="badge ${getSeverityClass(dato.cvss)}">${getSeverityText(dato.cvss)} (${dato.cvss || 'N/A'})</span></td><td><span class="badge ${getBadgeClassForZeroDayEstado(dato.estado)}">${dato.estado || ''}</span></td>`;
-                break;
-            case 'cves':
-                cells = `<td>${dato.cveId || ''}${refLink}</td><td>${dato.aplicativo || ''}</td><td>${formatDisplayDate(dato.fecha)}</td><td><span class="badge ${getSeverityClass(dato.cvss)}">${getSeverityText(dato.cvss)} (${dato.cvss || 'N/A'})</span></td><td>${dato.estado || ''}</td>`;
-                break;
-            case 'alertas':
-                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.titulo || ''}${refLink}</td><td><span class="badge ${getSeverityClass(dato.criticidad, true)}">${dato.criticidad || ''}</span></td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
-                break;
-            case 'fuentes':
-                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.nombre || ''}</td><td>${dato.tipo || ''}</td><td>${dato.url ? `<a href="${dato.url}" target="_blank" rel="noopener noreferrer" title="${dato.url}">Link <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i></a>` : 'N/A'}</td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
-                break;
-            case 'mitigaciones':
-                cells = `<td>${dato.titulo || ''}${refLink}</td><td>${dato.categoria || ''}</td><td><span class="badge ${getSeverityClass(dato.prioridad, true)}">${dato.prioridad || ''}</span></td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
-                break;
-        }
-        
-        const editButtonHTML = `<button class="btn btn-edit" data-id="${itemIdentifier}" data-type="${tipo}" onclick="handleEditClick(this)"><i class="fa-solid fa-pencil"></i></button>`;
-        const deleteButtonHTML = `<button class="btn btn-danger" onclick="eliminarRegistro('${endpoint}', '${itemIdentifier}')"><i class="fa-solid fa-trash"></i></button>`;
-
-        row.innerHTML = `${cells}<td class="actions-cell">${editButtonHTML}${deleteButtonHTML}</td>`;
-        tbody.appendChild(row);
-    });
-}
-    // =============================================================================
-    // MANEJADORES DE EVENTOS PARA BOTONES DE ACCIÓN
-    // =============================================================================
-
-    function handleEditClick(button) {
-        const id = button.dataset.id;
-        const type = button.dataset.type;
-        const endpoint = type === 'zeroDays' ? 'zero-days' : type;
-        
-        const item = ALL_DATA_CACHE[endpoint]?.find(d => d._id === id);
-
-        if (!item) {
-            console.error(`Item with ID ${id} not found for type ${type}`);
-            alert("No se pudo encontrar el registro para editar.");
-            return;
-        }
-
-        const editFunctions = {
-            incidentes: populateIncidenteFormForEdit,
-            exploits: populateExploitFormForEdit,
-            zeroDays: populateZeroDayFormForEdit,
-            cves: populateCveFormForEdit,
-            alertas: populateAlertaFormForEdit,
-            fuentes: populateFuenteFormForEdit,
-            mitigaciones: populateMitigacionFormForEdit
-        };
-
-        if (editFunctions[type]) {
-            editFunctions[type](item);
-        }
-    }
-    
     // =============================================================================
     // LÓGICA GENERAL DE LA APLICACIÓN (UI, NAVEGACIÓN, INICIALIZACIÓN)
     // =============================================================================
-    
     function parseCssVariables() {
         const styleSheets = Array.from(document.styleSheets).filter(sheet => { try { return sheet.cssRules; } catch (e) { return false; } });
         for (const sheet of styleSheets) { for (const rule of Array.from(sheet.cssRules)) { if (rule.style && rule.selectorText === ':root') { for (let i = 0; i < rule.style.length; i++) { const name = rule.style[i]; if (name.startsWith('--')) { const value = rule.style.getPropertyValue(name).trim(); if (value.startsWith('#')) {  const hex = value.substring(1); const bigint = parseInt(hex, 16); ROOT_CSS_VARIABLES[name] = { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255, hex: value }; } else { ROOT_CSS_VARIABLES[name] = value; } } } return; } } }
@@ -785,40 +845,83 @@
 
         document.getElementById('navMenuContainer').classList.remove('open');
         
-        const tabTypeMap = { 'incidentes': 'incidentes', 'exploits': 'exploits', 'zero-days': 'zeroDays', 'cves': 'cves', 'alertas': 'alertas', 'fuentes': 'fuentes', 'mitigaciones': 'mitigaciones' };
-        const dataType = tabTypeMap[tabName];
-        
-        if (tabName === 'dashboard') { await renderDashboard(); } 
-        else if (dataType) { await mostrarDatos(dataType); }
+        if (tabName === 'dashboard') {
+             await renderDynamicDashboard();
+        } else {
+            const tabTypeMap = { 'incidentes': 'incidentes', 'exploits': 'exploits', 'zero-days': 'zeroDays', 'cves': 'cves', 'alertas': 'alertas', 'fuentes': 'fuentes', 'mitigaciones': 'mitigaciones' };
+            const dataType = tabTypeMap[tabName];
+            if (dataType) { await mostrarDatos(dataType); }
+        }
     }
 
     function navigateToTab(tabName) { openTab(tabName); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-    async function fetchAndCacheAllData() {
+    async function fetchAndCacheAllData(forceDashboardRender = false) {
+        console.log("Attempting to fetch data from API...");
+        const dataKeys = ['incidentes', 'exploits', 'zero-days', 'cves', 'alertas', 'fuentes', 'mitigaciones'];
         try {
-            const dataKeys = ['incidentes', 'exploits', 'zero-days', 'cves', 'alertas', 'fuentes', 'mitigaciones'];
-            const promises = dataKeys.map(key => fetch(`${API_BASE_URL}/${key}`).then(res => { if (!res.ok) throw new Error(`Failed to fetch ${key}`); return res.json(); }));
+            const promises = dataKeys.map(key => fetch(`${API_BASE_URL}/${key}`).then(res => { 
+                if (!res.ok) throw new Error(`Failed to fetch ${key}: ${res.status} ${res.statusText}`); 
+                return res.json(); 
+            }));
             const results = await Promise.all(promises);
             dataKeys.forEach((key, index) => { ALL_DATA_CACHE[key] = results[index]; });
-            console.log("Data cache updated from server.");
+            console.log("Data cache updated successfully from server.", ALL_DATA_CACHE);
         } catch (error) {
-            console.error("Error caching data:", error);
-            alert("Hubo un problema al cargar los datos iniciales desde el servidor. Verifique que el servidor backend (`server.js`) esté en ejecución y que la base de datos MongoDB esté accesible.");
+            console.error("Fatal error fetching data:", error);
+            alert(`Hubo un problema crítico al cargar los datos. Verifique que el servidor backend (server.js) esté en ejecución y que la URL ${API_BASE_URL} sea correcta. Error: ${error.message}`);
         }
+        
+        updateGlobalStats();
+
+        if (forceDashboardRender || document.getElementById('dashboard').classList.contains('active')) {
+            await renderDynamicDashboard();
+        }
+    }
+    
+    function updateGlobalStats() {
+        document.getElementById('statIncidents').textContent = (ALL_DATA_CACHE.incidentes || []).length;
+        document.getElementById('statExploits').textContent = (ALL_DATA_CACHE.exploits || []).length;
+        document.getElementById('statZeroDays').textContent = (ALL_DATA_CACHE['zero-days'] || []).length;
+        document.getElementById('statCVEs').textContent = (ALL_DATA_CACHE.cves || []).length;
+        document.getElementById('statAlerts').textContent = (ALL_DATA_CACHE.alertas || []).length;
+        document.getElementById('statFuentes').textContent = (ALL_DATA_CACHE.fuentes || []).length;
+        document.getElementById('statMitigaciones').textContent = (ALL_DATA_CACHE.mitigaciones || []).length;
     }
 
     document.addEventListener('DOMContentLoaded', async function() {
+        console.log("DOM fully loaded and parsed. Initializing application.");
         parseCssVariables();
+        loadLayout();
+        setupModal();
+
         await fetchAndCacheAllData();
 
-        document.querySelectorAll('#appNavigation .nav-link').forEach(link => { link.addEventListener('click', function(e) { e.preventDefault(); openTab(this.dataset.tabName); }); });
-        window.onclick = function(event) { if (!event.target.matches('.menu-toggle-btn') && !event.target.closest('.dropdown-menu')) { document.getElementById('navMenuContainer').classList.remove('open'); } }
+        document.querySelectorAll('#appNavigation .nav-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); openTab(e.currentTarget.dataset.tabName); }); });
+        window.onclick = (event) => { if (!event.target.matches('.menu-toggle-btn') && !event.target.closest('.dropdown-menu')) { document.getElementById('navMenuContainer').classList.remove('open'); } }
 
-        document.getElementById('applyDashboardFilterBtn').addEventListener('click', () => renderDashboard());
+        document.getElementById('applyDashboardFilterBtn').addEventListener('click', () => renderDynamicDashboard());
         document.getElementById('resetDashboardFilterBtn').addEventListener('click', () => {
             document.getElementById('dashboardStartDate').value = '';
             document.getElementById('dashboardEndDate').value = '';
-            renderDashboard();
+            renderDynamicDashboard();
+        });
+        
+        document.getElementById('toggleEditModeBtn').addEventListener('click', toggleEditMode);
+
+        // Event delegation for widget controls
+        document.getElementById('dashboardGrid').addEventListener('click', (e) => {
+            const deleteBtn = e.target.closest('.delete-widget-btn');
+            if (deleteBtn) {
+                deleteWidget(deleteBtn.dataset.widgetId);
+                return;
+            }
+
+            const downloadBtn = e.target.closest('.download-chart-btn');
+            if (downloadBtn) {
+                downloadChartImage(downloadBtn.dataset.chartId, downloadBtn.dataset.chartTitle);
+                return;
+            }
         });
 
         await openTab('dashboard'); 
@@ -831,94 +934,29 @@
         const formPrefix = formId.replace('Form', ''); 
         const idField = document.getElementById(`${formPrefix}EditId`);
         if (idField) idField.value = '';
-        
         if (formId === 'cveForm') { document.getElementById('idCVE').readOnly = false; }
-
         document.getElementById(formTitleId).textContent = originalTitle;
         const saveButton = document.getElementById(submitBtnId);
-        if (saveButton) {
-            saveButton.innerHTML = `<i class="fa-solid fa-save"></i> ${originalSubmitText}`;
-        }
-        
+        if (saveButton) { saveButton.innerHTML = `<i class="fa-solid fa-save"></i> ${originalSubmitText}`; }
         const capitalPrefix = capitalFirstLetter(formPrefix.replace('-',''));
         const cancelButton = document.getElementById(`cancel${capitalPrefix}EditBtn`);
         if (cancelButton) cancelButton.style.display = 'none';
-
         const formContainer = document.getElementById(`${formPrefix.replace('-','')}FormContainer`);
         if (formContainer) formContainer.style.display = 'none';
     }
 
     // --- FORM SUBMISSIONS ---
-    document.getElementById('incidenteForm').addEventListener('submit', function(e) { 
-        e.preventDefault(); 
-        const item = { _id: document.getElementById('incidenteEditId').value || null, fecha: document.getElementById('fechaIncidente').value, tipo: document.getElementById('tipoIncidente').value, entidad: document.getElementById('entidadIncidente').value, pais: document.getElementById('paisIncidente').value, sector: document.getElementById('sectorIncidente').value, descripcion: document.getElementById('descripcionIncidente').value, datosComprometidos: document.getElementById('datosComprometidosIncidente').value, actor: document.getElementById('actorIncidente').value, url: document.getElementById('urlIncidente').value }; 
-        guardarDato('incidentes', item)
-            .then(() => cancelEdit('incidenteForm', 'incidenteFormTitle', 'Registrar Incidente', 'guardarIncidenteBtn', 'Guardar Incidente'))
-            .catch(err => console.error("El guardado falló, el formulario no se resetea.", err));
-    });
-    
-    document.getElementById('exploitForm').addEventListener('submit', function(e) { 
-        e.preventDefault(); 
-        const item = { _id: document.getElementById('exploitEditId').value || null, fecha: document.getElementById('fechaExploit').value, nombre: document.getElementById('nombreExploit').value, tipo: document.getElementById('tipoExploit').value, plataforma: document.getElementById('plataformaExploit').value, cve: document.getElementById('cveExploit').value.toUpperCase().trim(), url: document.getElementById('urlExploit').value }; 
-        guardarDato('exploits', item)
-            .then(() => cancelEdit('exploitForm', 'exploitFormTitle', 'Registrar Exploit', 'guardarExploitBtn', 'Guardar Exploit'))
-            .catch(err => console.error("El guardado falló, el formulario no se resetea.", err));
-    });
-    
-    document.getElementById('zeroDayForm').addEventListener('submit', function(e) { 
-        e.preventDefault(); 
-        const item = { _id: document.getElementById('zeroDayEditId').value || null, idZD: document.getElementById('idZD').value.trim(), fecha: document.getElementById('fechaZD').value, nombre: document.getElementById('nombreZD').value, plataforma: document.getElementById('plataformaZD').value, cvss: parseFloat(document.getElementById('cvssZD').value) || 0, estado: document.getElementById('estadoZD').value, url: document.getElementById('urlZD').value, descripcion: document.getElementById('descripcionZD').value }; 
-        guardarDato('zero-days', item)
-            .then(() => cancelEdit('zeroDayForm', 'zeroDayFormTitle', 'Registrar Zero Day', 'guardarZeroDayBtn', 'Guardar Zero Day'))
-            .catch(err => console.error("El guardado falló, el formulario no se resetea.", err));
-    });
-    
-    document.getElementById('cveForm').addEventListener('submit', function(e) { 
-        e.preventDefault(); 
-        const item = { _id: document.getElementById('cveEditId').value || null, cveId: document.getElementById('idCVE').value.toUpperCase().trim(), fecha: document.getElementById('fechaCVE').value, aplicativo: document.getElementById('aplicativoCVE').value, cvss: parseFloat(document.getElementById('cvssCVE').value) || 0, estado: document.getElementById('estadoCVE').value, descripcion: document.getElementById('descripcionCVE').value, url: document.getElementById('urlCVE').value }; 
-        guardarDato('cves', item)
-            .then(() => cancelEdit('cveForm', 'cveFormTitle', 'Registrar CVE', 'guardarCveBtn', 'Guardar CVE'))
-            .catch(err => console.error("El guardado falló, el formulario no se resetea.", err));
-    });
-    
-    document.getElementById('alertaForm').addEventListener('submit', function(e) { 
-        e.preventDefault(); 
-        const item = { _id: document.getElementById('alertaEditId').value || null, titulo: document.getElementById('tituloAlerta').value, descripcion: document.getElementById('descripcionAlerta').value, criticidad: document.getElementById('criticidadAlerta').value, fecha: document.getElementById('fechaAlerta').value, url: document.getElementById('urlAlerta').value }; 
-        guardarDato('alertas', item)
-            .then(() => cancelEdit('alertaForm', 'alertaFormTitle', 'Registrar Alerta', 'guardarAlertaBtn', 'Guardar Alerta'))
-            .catch(err => console.error("El guardado falló, el formulario no se resetea.", err));
-    });
-    
-    document.getElementById('fuenteForm').addEventListener('submit', function(e) { 
-        e.preventDefault(); 
-        const item = { _id: document.getElementById('fuenteEditId').value || null, fecha: document.getElementById('fechaFuente').value, nombre: document.getElementById('nombreFuente').value, tipo: document.getElementById('tipoFuente').value, url: document.getElementById('urlFuente').value, descripcion: document.getElementById('descripcionFuente').value }; 
-        guardarDato('fuentes', item)
-            .then(() => cancelEdit('fuenteForm', 'fuenteFormTitle', 'Registrar Fuente', 'guardarFuenteBtn', 'Guardar Fuente'))
-            .catch(err => console.error("El guardado falló, el formulario no se resetea.", err));
-    });
-    
-    document.getElementById('mitigacionForm').addEventListener('submit', function(e) { 
-        e.preventDefault(); 
-        const item = { _id: document.getElementById('mitigacionEditId').value || null, fecha: document.getElementById('fechaMitigacion').value, titulo: document.getElementById('tituloMitigacion').value, categoria: document.getElementById('categoriaMitigacion').value, prioridad: document.getElementById('prioridadMitigacion').value, descripcion: document.getElementById('descripcionMitigacion').value, url: document.getElementById('urlMitigacion').value }; 
-        guardarDato('mitigaciones', item)
-            .then(() => cancelEdit('mitigacionForm', 'mitigacionFormTitle', 'Registrar Mitigación', 'guardarMitigacionBtn', 'Guardar Mitigación'))
-            .catch(err => console.error("El guardado falló, el formulario no se resetea.", err));
-    });
+    document.getElementById('incidenteForm').addEventListener('submit', function(e) { e.preventDefault(); const item = { _id: document.getElementById('incidenteEditId').value || null, fecha: document.getElementById('fechaIncidente').value, tipo: document.getElementById('tipoIncidente').value, entidad: document.getElementById('entidadIncidente').value, pais: document.getElementById('paisIncidente').value, sector: document.getElementById('sectorIncidente').value, descripcion: document.getElementById('descripcionIncidente').value, datosComprometidos: document.getElementById('datosComprometidosIncidente').value, actor: document.getElementById('actorIncidente').value, url: document.getElementById('urlIncidente').value }; guardarDato('incidentes', item).then(() => cancelEdit('incidenteForm', 'incidenteFormTitle', 'Registrar Incidente', 'guardarIncidenteBtn', 'Guardar Incidente')).catch(err => console.error("Save failed", err)); });
+    document.getElementById('exploitForm').addEventListener('submit', function(e) { e.preventDefault(); const item = { _id: document.getElementById('exploitEditId').value || null, fecha: document.getElementById('fechaExploit').value, nombre: document.getElementById('nombreExploit').value, tipo: document.getElementById('tipoExploit').value, plataforma: document.getElementById('plataformaExploit').value, cve: document.getElementById('cveExploit').value.toUpperCase().trim(), url: document.getElementById('urlExploit').value }; guardarDato('exploits', item).then(() => cancelEdit('exploitForm', 'exploitFormTitle', 'Registrar Exploit', 'guardarExploitBtn', 'Guardar Exploit')).catch(err => console.error("Save failed", err)); });
+    document.getElementById('zeroDayForm').addEventListener('submit', function(e) { e.preventDefault(); const item = { _id: document.getElementById('zeroDayEditId').value || null, idZD: document.getElementById('idZD').value.trim(), fecha: document.getElementById('fechaZD').value, nombre: document.getElementById('nombreZD').value, plataforma: document.getElementById('plataformaZD').value, cvss: parseFloat(document.getElementById('cvssZD').value) || 0, estado: document.getElementById('estadoZD').value, url: document.getElementById('urlZD').value, descripcion: document.getElementById('descripcionZD').value }; guardarDato('zero-days', item).then(() => cancelEdit('zeroDayForm', 'zeroDayFormTitle', 'Registrar Zero Day', 'guardarZeroDayBtn', 'Guardar Zero Day')).catch(err => console.error("Save failed", err)); });
+    document.getElementById('cveForm').addEventListener('submit', function(e) { e.preventDefault(); const item = { _id: document.getElementById('cveEditId').value || null, cveId: document.getElementById('idCVE').value.toUpperCase().trim(), fecha: document.getElementById('fechaCVE').value, aplicativo: document.getElementById('aplicativoCVE').value, cvss: parseFloat(document.getElementById('cvssCVE').value) || 0, estado: document.getElementById('estadoCVE').value, descripcion: document.getElementById('descripcionCVE').value, url: document.getElementById('urlCVE').value }; guardarDato('cves', item).then(() => cancelEdit('cveForm', 'cveFormTitle', 'Registrar CVE', 'guardarCveBtn', 'Guardar CVE')).catch(err => console.error("Save failed", err)); });
+    document.getElementById('alertaForm').addEventListener('submit', function(e) { e.preventDefault(); const item = { _id: document.getElementById('alertaEditId').value || null, titulo: document.getElementById('tituloAlerta').value, descripcion: document.getElementById('descripcionAlerta').value, criticidad: document.getElementById('criticidadAlerta').value, fecha: document.getElementById('fechaAlerta').value, url: document.getElementById('urlAlerta').value }; guardarDato('alertas', item).then(() => cancelEdit('alertaForm', 'alertaFormTitle', 'Registrar Alerta', 'guardarAlertaBtn', 'Guardar Alerta')).catch(err => console.error("Save failed", err)); });
+    document.getElementById('fuenteForm').addEventListener('submit', function(e) { e.preventDefault(); const item = { _id: document.getElementById('fuenteEditId').value || null, fecha: document.getElementById('fechaFuente').value, nombre: document.getElementById('nombreFuente').value, tipo: document.getElementById('tipoFuente').value, url: document.getElementById('urlFuente').value, descripcion: document.getElementById('descripcionFuente').value }; guardarDato('fuentes', item).then(() => cancelEdit('fuenteForm', 'fuenteFormTitle', 'Registrar Fuente', 'guardarFuenteBtn', 'Guardar Fuente')).catch(err => console.error("Save failed", err)); });
+    document.getElementById('mitigacionForm').addEventListener('submit', function(e) { e.preventDefault(); const item = { _id: document.getElementById('mitigacionEditId').value || null, fecha: document.getElementById('fechaMitigacion').value, titulo: document.getElementById('tituloMitigacion').value, categoria: document.getElementById('categoriaMitigacion').value, prioridad: document.getElementById('prioridadMitigacion').value, descripcion: document.getElementById('descripcionMitigacion').value, url: document.getElementById('urlMitigacion').value }; guardarDato('mitigaciones', item).then(() => cancelEdit('mitigacionForm', 'mitigacionFormTitle', 'Registrar Mitigación', 'guardarMitigacionBtn', 'Guardar Mitigación')).catch(err => console.error("Save failed", err)); });
 
     // --- POPULATE FORMS FOR EDIT ---
     const formatInputDate = (isoDate) => isoDate ? new Date(isoDate).toISOString().split('T')[0] : '';
-    
-    function populateFormAndShow(formPrefix, capitalPrefix) {
-        const formContainer = document.getElementById(`${formPrefix.replace('-','')}FormContainer`);
-        if (formContainer) {
-            formContainer.style.display = 'block';
-            formContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-        document.getElementById(`${formPrefix.replace('-','')}FormTitle`).textContent = `Editar ${capitalPrefix === 'ZeroDay' ? 'Zero Day' : capitalPrefix}`;
-        document.getElementById(`guardar${capitalPrefix}Btn`).innerHTML = `<i class="fa-solid fa-save"></i> Actualizar`;
-        document.getElementById(`cancel${capitalPrefix}EditBtn`).style.display = 'inline-flex';
-    }
-
+    function populateFormAndShow(formPrefix, capitalPrefix) { const formContainer = document.getElementById(`${formPrefix.replace('-','')}FormContainer`); if (formContainer) { formContainer.style.display = 'block'; formContainer.scrollIntoView({ behavior: 'smooth', block: 'center' }); } document.getElementById(`${formPrefix.replace('-','')}FormTitle`).textContent = `Editar ${capitalPrefix === 'ZeroDay' ? 'Zero Day' : capitalPrefix}`; document.getElementById(`guardar${capitalPrefix}Btn`).innerHTML = `<i class="fa-solid fa-save"></i> Actualizar`; document.getElementById(`cancel${capitalPrefix}EditBtn`).style.display = 'inline-flex'; }
     function populateIncidenteFormForEdit(item) { if (item) { document.getElementById('incidenteEditId').value = item._id; document.getElementById('fechaIncidente').value = formatInputDate(item.fecha); document.getElementById('tipoIncidente').value = item.tipo; document.getElementById('entidadIncidente').value = item.entidad; document.getElementById('paisIncidente').value = item.pais; document.getElementById('sectorIncidente').value = item.sector; document.getElementById('descripcionIncidente').value = item.descripcion; document.getElementById('datosComprometidosIncidente').value = item.datosComprometidos; document.getElementById('actorIncidente').value = item.actor; document.getElementById('urlIncidente').value = item.url || ''; populateFormAndShow('incidente', 'Incidente'); } }
     function populateExploitFormForEdit(item) { if (item) { document.getElementById('exploitEditId').value = item._id; document.getElementById('fechaExploit').value = formatInputDate(item.fecha); document.getElementById('nombreExploit').value = item.nombre; document.getElementById('tipoExploit').value = item.tipo; document.getElementById('plataformaExploit').value = item.plataforma; document.getElementById('cveExploit').value = item.cve; document.getElementById('urlExploit').value = item.url || ''; populateFormAndShow('exploit', 'Exploit'); } }
     function populateZeroDayFormForEdit(item) { if (item) { document.getElementById('zeroDayEditId').value = item._id; document.getElementById('idZD').value = item.idZD; document.getElementById('fechaZD').value = formatInputDate(item.fecha); document.getElementById('nombreZD').value = item.nombre; document.getElementById('plataformaZD').value = item.plataforma; document.getElementById('cvssZD').value = item.cvss; document.getElementById('estadoZD').value = item.estado; document.getElementById('urlZD').value = item.url || ''; document.getElementById('descripcionZD').value = item.descripcion; populateFormAndShow('zeroDay', 'ZeroDay'); } }
@@ -928,7 +966,6 @@
     function populateMitigacionFormForEdit(item) { if (item) { document.getElementById('mitigacionEditId').value = item._id; document.getElementById('fechaMitigacion').value = formatInputDate(item.fecha); document.getElementById('tituloMitigacion').value = item.titulo; document.getElementById('categoriaMitigacion').value = item.categoria; document.getElementById('descripcionMitigacion').value = item.descripcion; document.getElementById('prioridadMitigacion').value = item.prioridad; document.getElementById('urlMitigacion').value = item.url || ''; populateFormAndShow('mitigacion', 'Mitigacion'); } }
     
     // --- UTILITY & SEARCH FUNCTIONS ---
-    function getBadgeClassForZeroDayEstado(estado) { switch (String(estado)?.toLowerCase()) { case 'activo': return 'badge-estado-activo'; case 'mitigado': return 'badge-estado-mitigado'; case 'en investigación': case 'investigacion': return 'badge-estado-investigacion'; case 'prueba de concepto': case 'pruebadeconcepto': return 'badge-estado-poc'; default: return 'badge-info'; } }
     function searchTable(inputId, tableId, searchColumns) { const input = document.getElementById(inputId); const filter = input.value.toUpperCase(); const table = document.getElementById(tableId); const tr = table.getElementsByTagName("tr"); for (let i = 1; i < tr.length; i++) { let found = false; for (const colIndex of searchColumns) { const td = tr[i].getElementsByTagName("td")[colIndex]; if (td) { const txtValue = td.textContent || td.innerText; if (txtValue.toUpperCase().indexOf(filter) > -1) { found = true; break; } } } tr[i].style.display = found ? "" : "none"; } }
     function buscarIncidentes() { searchTable('searchIncidentes', 'tablaIncidentes', [0, 1, 2, 3, 4, 5]); }
     function buscarExploits() { searchTable('searchExploits', 'tablaExploits', [0, 1, 2, 3, 4]); }
@@ -939,10 +976,9 @@
     function buscarMitigaciones() { searchTable('searchMitigaciones', 'tablaMitigaciones', [0, 1, 3]); }
 
     // =============================================================================
-    // DASHBOARD & CHARTING FUNCTIONS
+    // DYNAMIC DASHBOARD & CHARTING FUNCTIONS
     // =============================================================================
-
-    async function renderDashboard() { 
+    function getFilteredData() {
         const startDateStr = document.getElementById('dashboardStartDate').value;
         const endDateStr = document.getElementById('dashboardEndDate').value;
         
@@ -953,11 +989,9 @@
             dashboardDateEl.textContent = `Mostrando todos los datos registrados.`;
         }
         
-        await fetchAndCacheAllData();
-
         const filterByDate = (item) => {
             if (!startDateStr || !endDateStr) return true;
-            if (!item.fecha) return false;
+            if (!item.fecha) return true; // Include items without a date unless filtered
             const itemDate = new Date(item.fecha); 
             const startDate = new Date(startDateStr);
             const endDate = new Date(endDateStr);
@@ -965,41 +999,178 @@
             return itemDate >= startDate && itemDate <= endDate;
         };
         
-        const incidentes = (ALL_DATA_CACHE.incidentes || []).filter(filterByDate);
-        const exploits = (ALL_DATA_CACHE.exploits || []).filter(filterByDate);
-        const zeroDays = (ALL_DATA_CACHE['zero-days'] || []).filter(filterByDate);
-        const cves = (ALL_DATA_CACHE.cves || []).filter(filterByDate);
-        const alertas = (ALL_DATA_CACHE.alertas || []).filter(filterByDate);
-        const fuentes = (ALL_DATA_CACHE.fuentes || []); // Total count is not filtered
-        const mitigaciones = (ALL_DATA_CACHE.mitigaciones || []); // Total count is not filtered
-
-        document.getElementById('statIncidents').textContent = (ALL_DATA_CACHE.incidentes || []).length;
-        document.getElementById('statExploits').textContent = (ALL_DATA_CACHE.exploits || []).length;
-        document.getElementById('statZeroDays').textContent = (ALL_DATA_CACHE['zero-days'] || []).length;
-        document.getElementById('statCVEs').textContent = (ALL_DATA_CACHE.cves || []).length;
-        document.getElementById('statAlerts').textContent = (ALL_DATA_CACHE.alertas || []).length;
-        document.getElementById('statFuentes').textContent = fuentes.length;
-        document.getElementById('statMitigaciones').textContent = mitigaciones.length;
-        
-        renderTimelineChart(incidentes, exploits, zeroDays, cves, startDateStr, endDateStr);
-        renderDashboardAllAlerts(alertas);
-        renderAlertsBySeverityChart(alertas);
-        renderIncidentsTypeChart(incidentes);
-        renderIncidentsSectorChart(incidentes);
-        renderTopAffectedEntitiesChart(incidentes);
-        renderSeverityChart(cves);
-        renderCVEsByStatusChart(cves);
-        renderZeroDaysByStatusChart(zeroDays);
-        renderExploitsByTypeChart(exploits);
-        renderTopPlatformsChart(exploits, 'topPlatformsExploitsChart', 'Exploits');
-        renderFuentesByTypeChart(fuentes.filter(filterByDate)); // Chart is filtered
-        renderMitigacionesByCatChart(mitigaciones.filter(filterByDate)); // Chart is filtered
-        renderMitigacionesByPrioChart(mitigaciones.filter(filterByDate)); // Chart is filtered
-        renderDashboardCVETable(cves);
-        renderDashboardIncidentsTable(incidentes);
-        renderDashboardZeroDaysTable(zeroDays);
-        renderDashboardExploitsTable(exploits);
+        const filteredCache = {};
+        for(const key in ALL_DATA_CACHE) {
+             filteredCache[key] = (ALL_DATA_CACHE[key] || []).filter(filterByDate);
+        }
+        return filteredCache;
     }
+
+    async function renderDynamicDashboard() {
+        console.log("Rendering dynamic dashboard...");
+        const filteredData = getFilteredData();
+        const grid = document.getElementById('dashboardGrid');
+        grid.innerHTML = ''; 
+
+        Object.values(chartInstances).forEach(chart => chart.destroy());
+        chartInstances = {};
+
+        for (const widget of dashboardState.layoutConfig) {
+            const card = document.createElement('div');
+            card.className = `card ${widget.size}`;
+            card.dataset.widgetId = widget.id;
+
+            let headerControlsHTML = '';
+            const isChart = widget.type === 'chart' || (widget.type === 'special' && widget.component === 'timelineChart');
+            
+            if (isChart) {
+                headerControlsHTML += `<button class="download-chart-btn" data-chart-id="chart-${widget.id}" data-chart-title="${widget.title}"><i class="fa-solid fa-camera"></i></button>`;
+            }
+
+            if (dashboardState.isEditMode) {
+                if (widget.isDeletable !== false) {
+                    headerControlsHTML += `<button class="delete-widget-btn" data-widget-id="${widget.id}"><i class="fa-solid fa-trash"></i></button>`;
+                }
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <h2 class="card-title">${widget.title}</h2>
+                    <div class="widget-header-controls">${headerControlsHTML}</div>
+                </div>
+                <div class="card-body" id="body-${widget.id}"></div>
+            `;
+            grid.appendChild(card);
+            
+            const cardBody = document.getElementById(`body-${widget.id}`);
+            
+            if (widget.type === 'chart') {
+                renderChartWidget(widget, cardBody, filteredData);
+            } else if (widget.type === 'table') {
+                renderTableWidget(widget, cardBody, filteredData);
+            } else if (widget.type === 'special') {
+                renderSpecialWidget(widget, cardBody, filteredData);
+            }
+        }
+        console.log("Dashboard rendered.");
+    }
+
+    function renderChartWidget(widget, container, filteredData) {
+        const canvasId = `chart-${widget.id}`;
+        container.innerHTML = `<div class="chart-container"><canvas id="${canvasId}"></canvas></div>`;
+
+        const sourceData = filteredData[widget.source] || [];
+        const data = sourceData.reduce((acc, curr) => {
+            const key = curr[widget.groupBy] || 'Sin categoría';
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+        }, {});
+        
+        const labels = Object.keys(data);
+        const values = Object.values(data);
+        
+        const chartColors = [
+            ROOT_CSS_VARIABLES['--secondary']?.hex, ROOT_CSS_VARIABLES['--success']?.hex, ROOT_CSS_VARIABLES['--warning']?.hex,
+            ROOT_CSS_VARIABLES['--danger']?.hex, ROOT_CSS_VARIABLES['--info']?.hex, ROOT_CSS_VARIABLES['--primary']?.hex, '#7f8c8d', '#34495e'
+        ];
+
+        let config = {
+            type: widget.chartType,
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `Nº de ${widget.source}`,
+                    data: values,
+                    backgroundColor: chartColors,
+                    borderColor: '#fff',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: (widget.chartType === 'bar' || widget.chartType === 'radar') ? 'top' : 'bottom',
+                    }
+                }
+            }
+        };
+
+        if (widget.chartType === 'bar') {
+            config.options.scales = { y: { beginAtZero: true, ticks: { precision: 0 } } };
+            config.options.plugins.legend.display = false;
+        }
+
+        if (widget.chartType === 'radar') {
+            config.options.scales = { r: { angleLines: { display: true }, suggestedMin: 0, ticks: { precision: 0 } } };
+        }
+        
+        createOrUpdateChart(canvasId, config);
+    }
+
+    function renderTableWidget(widget, container, filteredData) {
+        container.innerHTML = `<div class="table-container"><table id="table-${widget.id}"><thead></thead><tbody></tbody></table></div>`;
+        const table = document.getElementById(`table-${widget.id}`);
+        const thead = table.querySelector('thead');
+        const tbody = table.querySelector('tbody');
+        
+        const data = (filteredData[widget.source] || []).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 5);
+        if(data.length === 0) {
+            container.innerHTML = `<p>No hay datos para el período seleccionado.</p>`;
+            return;
+        }
+
+        let headers = '';
+        switch(widget.source) {
+            case 'incidentes':
+                headers = `<tr><th>Fecha</th><th>Entidad</th><th>Sector</th><th>Tipo</th></tr>`;
+                data.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `<td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.entidad}</td><td>${item.sector || 'N/A'}</td><td>${item.tipo}</td>`;
+                });
+                break;
+            case 'cves':
+                headers = `<tr><th>ID</th><th>Aplicativo</th><th>Severidad</th><th>CVSS</th></tr>`;
+                data.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `<td>${item.cveId}</td><td>${item.aplicativo}</td><td><span class="badge ${getSeverityClass(item.cvss)}">${getSeverityText(item.cvss)}</span></td><td>${item.cvss}</td>`;
+                });
+                break;
+            case 'exploits':
+                headers = `<tr><th>Fecha</th><th>Nombre</th><th>Tipo</th><th>Plataforma</th></tr>`;
+                data.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `<td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.nombre}</td><td>${item.tipo}</td><td>${item.plataforma}</td>`;
+                });
+                break;
+            case 'zero-days':
+                headers = `<tr><th>ID</th><th>Nombre</th><th>Fecha</th><th>Estado</th></tr>`;
+                data.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.innerHTML = `<td>${item.idZD || 'N/A'}</td><td>${item.nombre}</td><td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.estado}</td>`;
+                });
+                break;
+        }
+        thead.innerHTML = headers;
+    }
+
+    function renderSpecialWidget(widget, container, filteredData) {
+         const canvasId = `chart-${widget.id}`;
+         const { startDateStr, endDateStr } = { 
+            startDateStr: document.getElementById('dashboardStartDate').value,
+            endDateStr: document.getElementById('dashboardEndDate').value
+         };
+
+        if (widget.component === 'timelineChart') {
+            container.innerHTML = `<div class="chart-container" style="height: 350px;"><canvas id="${canvasId}"></canvas></div>`;
+            renderTimelineChart(canvasId, filteredData, startDateStr, endDateStr);
+        } else if (widget.component === 'dashboardAllAlerts') {
+            container.innerHTML = `<div class="dashboard-alerts-container" id="alerts-${widget.id}"></div>`;
+            renderDashboardAllAlerts(document.getElementById(`alerts-${widget.id}`), filteredData.alertas);
+        }
+    }
+
 
     function createOrUpdateChart(chartId, chartConfig) {
         const ctx = document.getElementById(chartId)?.getContext('2d');
@@ -1059,15 +1230,13 @@
         }
     }
     
-    function renderDashboardAllAlerts(alertas) {
-        const container = document.getElementById('dashboardAllAlertsContainer');
+    function renderDashboardAllAlerts(container, alertas) {
         container.innerHTML = ''; 
-        if (alertas.length === 0) {
+        if (!alertas || alertas.length === 0) {
             container.innerHTML = '<p>No hay alertas para el período seleccionado.</p>';
             return;
         }
         const sortedAlerts = [...alertas].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-
         sortedAlerts.slice(0, 10).forEach(alerta => {
             const itemDiv = document.createElement('div');
             itemDiv.className = `alert-dashboard-item ${getAlertItemClass(alerta.criticidad)}`;
@@ -1076,60 +1245,8 @@
         });
     }
 
-    function renderDashboardCVETable(cves) {
-        const tbody = document.querySelector('#dashboardCVEsTable tbody'); tbody.innerHTML = '';
-        const recentCVEs = cves.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 5);
-        if (recentCVEs.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5">No hay CVEs para el período seleccionado.</td></tr>';
-            return;
-        }
-        recentCVEs.forEach(cve => { const row = tbody.insertRow(); row.innerHTML = `<td>${cve.cveId}</td><td>${cve.aplicativo}</td><td><span class="badge ${getSeverityClass(cve.cvss)}">${getSeverityText(cve.cvss)}</span></td><td>${cve.estado}</td><td class="${getSeverityClass(cve.cvss)}">${cve.cvss}</td>`; });
-    }
-
-    function renderDashboardIncidentsTable(incidentes) {
-        const tbody = document.querySelector('#dashboardIncidentsTable tbody'); tbody.innerHTML = '';
-        const recentItems = incidentes.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 5);
-        if (recentItems.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">No hay incidentes para el período seleccionado.</td></tr>';
-            return;
-        }
-        recentItems.forEach(item => { const row = tbody.insertRow(); row.innerHTML = `<td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.entidad}</td><td><span class="badge badge-country">${item.pais || 'N/A'}</span></td><td><span class="badge badge-sector">${item.sector || 'N/A'}</span></td><td>${item.tipo}</td><td>${(item.descripcion || '').substring(0,30)}...</td>`; });
-    }
-
-    function renderDashboardZeroDaysTable(zeroDays) {
-        const tbody = document.querySelector('#dashboardZeroDaysTable tbody'); tbody.innerHTML = '';
-        const recentItems = zeroDays.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 5);
-        if (recentItems.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6">No hay Zero Days para el período seleccionado.</td></tr>';
-            return;
-        }
-        recentItems.forEach(item => { const row = tbody.insertRow(); row.innerHTML = `<td>${item.idZD || 'N/A'}</td><td>${item.nombre}</td><td>${item.plataforma}</td><td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td><span class="badge ${getBadgeClassForZeroDayEstado(item.estado)}">${item.estado}</span></td><td class="${getSeverityClass(item.cvss)}">${item.cvss}</td>`; });
-    }
-
-    function renderDashboardExploitsTable(exploits) {
-        const tbody = document.querySelector('#dashboardExploitsTable tbody'); tbody.innerHTML = '';
-        const recentItems = exploits.sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 5);
-        if (recentItems.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4">No hay exploits para el período seleccionado.</td></tr>';
-            return;
-        }
-        recentItems.forEach(item => { const row = tbody.insertRow(); row.innerHTML = `<td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.nombre}</td><td>${item.tipo}</td><td>${item.plataforma}</td>`; });
-    }
-    
-    function renderIncidentsTypeChart(incidentes) { const data = incidentes.reduce((acc, curr) => { acc[curr.tipo] = (acc[curr.tipo] || 0) + 1; return acc; }, {}); createOrUpdateChart('incidentsTypeChart', { type: 'doughnut', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#e74c3c', '#f39c12', '#3498db', '#2ecc71', '#9b59b6', '#1abc9c'], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }); }
-    function renderIncidentsSectorChart(incidentes) { const data = incidentes.reduce((acc, curr) => { if(curr.sector) acc[curr.sector] = (acc[curr.sector] || 0) + 1; return acc; }, {}); createOrUpdateChart('incidentsSectorChart', { type: 'pie', data: { labels: Object.keys(data), datasets: [{ data: Object.values(data), backgroundColor: ['#34495e', '#e67e22', '#27ae60', '#2980b9', '#8e44ad'], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } }); }
-    function getTopNItems(items, key, n = 5) { const counts = {}; items.forEach(item => { if(item[key]) counts[item[key]] = (counts[item[key]] || 0) + 1; }); return Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, n).reduce((obj, [k, v]) => ({ ...obj, [k]: v }), {}); }
-    function renderTopAffectedEntitiesChart(incidentes) { const topEntities = getTopNItems(incidentes, 'entidad', 5); createOrUpdateChart('topAffectedEntitiesChart', { type: 'bar', data: { labels: Object.keys(topEntities), datasets: [{ label: 'Nº de Incidentes', data: Object.values(topEntities), backgroundColor: ROOT_CSS_VARIABLES['--primary']?.hex + 'AA', borderColor: ROOT_CSS_VARIABLES['--primary']?.hex, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } } }); }
-    function renderAlertsBySeverityChart(alertas) { const severities = { "Informacional": 0, "Baja": 0, "Media": 0, "Alta": 0, "Critica": 0 }; alertas.forEach(alerta => { let crit = alerta.criticidad === "Crítica" ? "Critica" : alerta.criticidad; if(severities.hasOwnProperty(crit)) severities[crit]++; }); const labels = Object.keys(severities); const data = Object.values(severities); const backgroundColors = labels.map(label => { switch(label.toLowerCase()){ case 'critica': return ROOT_CSS_VARIABLES['--danger']?.hex; case 'alta': return ROOT_CSS_VARIABLES['--warning']?.hex; case 'media': return '#f1c40f'; case 'baja': return ROOT_CSS_VARIABLES['--success']?.hex; default: return ROOT_CSS_VARIABLES['--info']?.hex;} }); createOrUpdateChart('alertsBySeverityChart', { type: 'bar', data: { labels, datasets: [{ label: 'Nº de Alertas', data, backgroundColor: backgroundColors }] }, options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
-    function renderCVEsByStatusChart(cves) { const statuses = cves.reduce((acc, curr) => { acc[curr.estado] = (acc[curr.estado] || 0) + 1; return acc; }, {}); createOrUpdateChart('cvesByStatusChart', { type: 'doughnut', data: { labels: Object.keys(statuses), datasets: [{ data: Object.values(statuses), backgroundColor: [ROOT_CSS_VARIABLES['--info']?.hex, ROOT_CSS_VARIABLES['--danger']?.hex, ROOT_CSS_VARIABLES['--warning']?.hex, ROOT_CSS_VARIABLES['--success']?.hex], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }); }
-    function renderZeroDaysByStatusChart(zeroDays) { const statuses = zeroDays.reduce((acc, curr) => { acc[curr.estado] = (acc[curr.estado] || 0) + 1; return acc; }, {}); const statusColors = { 'Activo': ROOT_CSS_VARIABLES['--danger']?.hex, 'Mitigado': ROOT_CSS_VARIABLES['--success']?.hex, 'En Investigación': ROOT_CSS_VARIABLES['--warning']?.hex, 'Prueba de Concepto': ROOT_CSS_VARIABLES['--info']?.hex }; createOrUpdateChart('zeroDaysByStatusChart', { type: 'pie', data: { labels: Object.keys(statuses), datasets: [{ data: Object.values(statuses), backgroundColor: Object.keys(statuses).map(status => statusColors[status] || '#bdc3c7'), borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } }); }
-    function renderExploitsByTypeChart(exploits) { const types = exploits.reduce((acc, curr) => { acc[curr.tipo] = (acc[curr.tipo] || 0) + 1; return acc; }, {}); createOrUpdateChart('exploitsByTypeChart', { type: 'doughnut', data: { labels: Object.keys(types), datasets: [{ data: Object.values(types), backgroundColor: ['#e67e22', '#16a085', '#2980b9', '#8e44ad', '#d35400', '#27ae60', '#c0392b'], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }); }
-    function renderTopPlatformsChart(items, chartId, label) { const topPlatforms = getTopNItems(items, 'plataforma', 5); createOrUpdateChart(chartId, { type: 'bar', data: { labels: Object.keys(topPlatforms), datasets: [{ label: `Nº de ${label}`, data: Object.values(topPlatforms), backgroundColor: ROOT_CSS_VARIABLES['--secondary']?.hex + 'AA', borderColor: ROOT_CSS_VARIABLES['--secondary']?.hex, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } } }); }
-    function renderFuentesByTypeChart(fuentes) { const types = fuentes.reduce((acc, curr) => { acc[curr.tipo] = (acc[curr.tipo] || 0) + 1; return acc; }, {}); createOrUpdateChart('fuentesByTypeChart', { type: 'pie', data: { labels: Object.keys(types), datasets: [{ data: Object.values(types), backgroundColor: [ROOT_CSS_VARIABLES['--dark']?.hex, ROOT_CSS_VARIABLES['--info']?.hex, ROOT_CSS_VARIABLES['--primary']?.hex, '#7f8c8d'], borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } } }); }
-    function renderMitigacionesByCatChart(mitigaciones) { const categories = mitigaciones.reduce((acc, curr) => { acc[curr.categoria] = (acc[curr.categoria] || 0) + 1; return acc; }, {}); createOrUpdateChart('mitigacionesByCatChart', { type: 'bar', data: { labels: Object.keys(categories), datasets: [{ label: 'Nº de Mitigaciones', data: Object.values(categories), backgroundColor: ROOT_CSS_VARIABLES['--success']?.hex + 'AA', borderColor: ROOT_CSS_VARIABLES['--success']?.hex, borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } } }); }
-    function renderMitigacionesByPrioChart(mitigaciones) { const priorities = { 'Alta': 0, 'Media': 0, 'Baja': 0 }; mitigaciones.forEach(m => { if (priorities.hasOwnProperty(m.prioridad)) priorities[m.prioridad]++; }); const priorityColors = { 'Alta': ROOT_CSS_VARIABLES['--danger']?.hex, 'Media': ROOT_CSS_VARIABLES['--warning']?.hex, 'Baja': ROOT_CSS_VARIABLES['--success']?.hex }; createOrUpdateChart('mitigacionesByPrioChart', { type: 'doughnut', data: { labels: Object.keys(priorities), datasets: [{ data: Object.values(priorities), backgroundColor: Object.keys(priorities).map(prio => priorityColors[prio] || '#bdc3c7'), borderWidth: 1 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } } }); }
-    
-    function renderTimelineChart(incidentes, exploits, zeroDays, cves, startDateStr, endDateStr) {
+    function renderTimelineChart(canvasId, filteredData, startDateStr, endDateStr) {
+        const { incidentes, exploits, 'zero-days': zeroDays, cves } = filteredData;
         const dataPoints = {};
         let labels = [];
 
@@ -1153,144 +1270,150 @@
             }
         }
         
-        const processItems = (items, typeKey) => {
-            if (!Array.isArray(items)) return;
-            items.forEach(item => {
-                if (item && item.fecha) {
-                    const dateString = new Date(item.fecha).toISOString().split('T')[0];
-                    if (dataPoints.hasOwnProperty(dateString)) {
-                        dataPoints[dateString][typeKey]++;
-                    }
-                }
-            });
-        };
-
+        const processItems = (items, typeKey) => { if (Array.isArray(items)) { items.forEach(item => { if (item && item.fecha) { const dateString = new Date(item.fecha).toISOString().split('T')[0]; if (dataPoints.hasOwnProperty(dateString)) { dataPoints[dateString][typeKey]++; } } }); } };
         processItems(incidentes, 'incidents');
         processItems(exploits, 'exploits');
         processItems(zeroDays, 'zeroDays');
         processItems(cves, 'cves');
-        
         const sortedDateStrings = Object.keys(dataPoints).sort((a, b) => new Date(a) - new Date(b));
 
-        createOrUpdateChart('timelineChart', {
+        createOrUpdateChart(canvasId, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: 'Incidentes',
-                    data: sortedDateStrings.map(d => dataPoints[d]?.incidents || 0),
-                    borderColor: ROOT_CSS_VARIABLES['--danger']?.hex || '#e74c3c',
-                    backgroundColor: (ROOT_CSS_VARIABLES['--danger']?.hex || '#e74c3c') + '1A',
-                    tension: 0.3, fill: true
-                }, {
-                    label: 'Exploits',
-                    data: sortedDateStrings.map(d => dataPoints[d]?.exploits || 0),
-                    borderColor: ROOT_CSS_VARIABLES['--secondary']?.hex || '#3498db',
-                    backgroundColor: (ROOT_CSS_VARIABLES['--secondary']?.hex || '#3498db') + '1A',
-                    tension: 0.3, fill: true
-                }, {
-                    label: 'ZeroDays',
-                    data: sortedDateStrings.map(d => dataPoints[d]?.zeroDays || 0),
-                    borderColor: ROOT_CSS_VARIABLES['--success']?.hex || '#2ecc71',
-                    backgroundColor: (ROOT_CSS_VARIABLES['--success']?.hex || '#2ecc71') + '1A',
-                    tension: 0.3, fill: true
-                }, {
-                    label: 'CVEs',
-                    data: sortedDateStrings.map(d => dataPoints[d]?.cves || 0),
-                    borderColor: ROOT_CSS_VARIABLES['--warning']?.hex || '#f39c12',
-                    backgroundColor: (ROOT_CSS_VARIABLES['--warning']?.hex || '#f39c12') + '1A',
-                    tension: 0.3, fill: true
-                }]
+                datasets: [
+                    { label: 'Incidentes', data: sortedDateStrings.map(d => dataPoints[d]?.incidents || 0), borderColor: ROOT_CSS_VARIABLES['--danger']?.hex, backgroundColor: (ROOT_CSS_VARIABLES['--danger']?.hex || '#e74c3c') + '1A', tension: 0.3, fill: true }, 
+                    { label: 'Exploits', data: sortedDateStrings.map(d => dataPoints[d]?.exploits || 0), borderColor: ROOT_CSS_VARIABLES['--secondary']?.hex, backgroundColor: (ROOT_CSS_VARIABLES['--secondary']?.hex || '#3498db') + '1A', tension: 0.3, fill: true }, 
+                    { label: 'ZeroDays', data: sortedDateStrings.map(d => dataPoints[d]?.zeroDays || 0), borderColor: ROOT_CSS_VARIABLES['--success']?.hex, backgroundColor: (ROOT_CSS_VARIABLES['--success']?.hex || '#2ecc71') + '1A', tension: 0.3, fill: true }, 
+                    { label: 'CVEs', data: sortedDateStrings.map(d => dataPoints[d]?.cves || 0), borderColor: ROOT_CSS_VARIABLES['--warning']?.hex, backgroundColor: (ROOT_CSS_VARIABLES['--warning']?.hex || '#f39c12') + '1A', tension: 0.3, fill: true }
+                ]
             },
             options: {
                 responsive: true, maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        type: 'time',
-                        time: {
-                            unit: labels.length > 60 ? 'month' : (labels.length > 7 ? 'week' : 'day'), 
-                            tooltipFormat: 'dd/MM/yyyy',
-                            displayFormats: { day: 'dd MMM', week: 'dd MMM', month: 'MMM yyyy' }
-                        },
-                        ticks: { source: 'auto', maxRotation: 0, autoSkip: true }
-                    },
-                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
-                },
+                scales: { x: { type: 'time', time: { unit: labels.length > 60 ? 'month' : (labels.length > 7 ? 'week' : 'day'), tooltipFormat: 'dd/MM/yyyy', displayFormats: { day: 'dd MMM', week: 'dd MMM', month: 'MMM yyyy' } }, ticks: { source: 'auto', maxRotation: 0, autoSkip: true } }, y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 } } },
                 plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } },
                 interaction: { mode: 'index', intersect: false }
             }
         });
     }
 
-    function renderSeverityChart(cves) {
-        const recentCVEs = cves
-            .filter(cve => cve.fecha)
-            .sort((a,b) => new Date(b.fecha) - new Date(a.fecha))
-            .slice(0, 5); 
-        
-        createOrUpdateChart('severityChart', { type: 'radar', data: { 
-            labels: recentCVEs.map(cve => {
-                const id = cve.cveId || 'N/A';
-                const date = new Date(cve.fecha).toLocaleDateString('es-ES', {month: '2-digit', day: '2-digit'});
-                return (id.length > 15 ? id.substring(0,12)+"..." : id) + ` (${date})`;
-            }), 
-            datasets: [{ 
-                label: 'Puntaje CVSS', 
-                data: recentCVEs.map(cve => cve.cvss), 
-                backgroundColor: (ROOT_CSS_VARIABLES['--secondary']?.hex || '#3498db') + '33', 
-                borderColor: ROOT_CSS_VARIABLES['--secondary']?.hex || '#3498db', 
-                pointBackgroundColor: ROOT_CSS_VARIABLES['--secondary']?.hex || '#3498db' 
-            }] }, 
-            options: { responsive: true, maintainAspectRatio: false, scales: { r: { angleLines: { display: true }, suggestedMin: 0, suggestedMax: 10, pointLabels: { font: {size: 9}}}} } 
+    // =============================================================================
+    // MODAL LOGIC
+    // =============================================================================
+    function setupModal() {
+        const modal = document.getElementById('addWidgetModal');
+        const btn = document.getElementById('addWidgetBtn');
+        const span = document.getElementsByClassName('close-modal')[0];
+
+        btn.onclick = () => { modal.style.display = 'block'; resetModalForm(); };
+        span.onclick = () => { modal.style.display = 'none'; };
+        window.onclick = (event) => { if (event.target == modal) { modal.style.display = 'none'; } };
+
+        const widgetTypeSelect = document.getElementById('widgetType');
+        const chartDataSourceSelect = document.getElementById('chartDataSource');
+        const specialComponentSelect = document.getElementById('specialComponentSource');
+
+        widgetTypeSelect.addEventListener('change', (e) => {
+            const type = e.target.value;
+            document.querySelectorAll('.form-section').forEach(el => el.style.display = 'none');
+            if (type === 'chart') document.getElementById('chartOptions').style.display = 'block';
+            else if (type === 'table') document.getElementById('tableOptions').style.display = 'block';
+            else if (type === 'special') document.getElementById('specialOptions').style.display = 'block';
         });
+
+        chartDataSourceSelect.addEventListener('change', (e) => {
+            populateGroupBySelect(e.target.value);
+        });
+
+        specialComponentSelect.addEventListener('change', (e) => {
+            const componentKey = e.target.value;
+            if (componentKey && SPECIAL_COMPONENTS[componentKey]) {
+                document.getElementById('widgetTitle').value = SPECIAL_COMPONENTS[componentKey].defaultTitle;
+            }
+        });
+
+        document.getElementById('addWidgetForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newWidget = {
+                id: `widget-${Date.now()}`,
+                title: document.getElementById('widgetTitle').value,
+                type: document.getElementById('widgetType').value,
+                size: document.getElementById('widgetSize').value,
+            };
+
+            if (newWidget.type === 'chart') {
+                newWidget.chartType = document.getElementById('chartType').value;
+                newWidget.source = document.getElementById('chartDataSource').value;
+                newWidget.groupBy = document.getElementById('chartGroupBy').value;
+            } else if (newWidget.type === 'table') {
+                newWidget.source = document.getElementById('tableDataSource').value;
+            } else if (newWidget.type === 'special') {
+                const componentKey = document.getElementById('specialComponentSource').value;
+                newWidget.component = componentKey;
+                newWidget.isDeletable = SPECIAL_COMPONENTS[componentKey].isDeletable;
+            }
+            
+            addWidget(newWidget);
+            modal.style.display = 'none';
+        });
+    }
+
+    function resetModalForm() {
+        document.getElementById('addWidgetForm').reset();
+        document.querySelectorAll('.form-section').forEach(el => el.style.display = 'none');
+        
+        const chartDataSourceSelect = document.getElementById('chartDataSource');
+        const tableDataSourceSelect = document.getElementById('tableDataSource');
+        const specialComponentSelect = document.getElementById('specialComponentSource');
+        
+        chartDataSourceSelect.innerHTML = '';
+        tableDataSourceSelect.innerHTML = '';
+        specialComponentSelect.innerHTML = '';
+
+        Object.entries(DATA_SOURCES).forEach(([key, value]) => {
+            chartDataSourceSelect.add(new Option(value.label, key));
+        });
+        
+        ['incidentes', 'cves', 'exploits', 'zero-days'].forEach(key => {
+            tableDataSourceSelect.add(new Option(DATA_SOURCES[key].label, key));
+        });
+
+        Object.entries(SPECIAL_COMPONENTS).forEach(([key, value]) => {
+            specialComponentSelect.add(new Option(value.label, key));
+        });
+        
+        populateGroupBySelect(chartDataSourceSelect.value);
+    }
+    
+    function populateGroupBySelect(sourceKey) {
+        const groupBySelect = document.getElementById('chartGroupBy');
+        groupBySelect.innerHTML = '';
+        if (sourceKey && DATA_SOURCES[sourceKey]) {
+            Object.entries(DATA_SOURCES[sourceKey].fields).forEach(([fieldKey, fieldLabel]) => {
+                groupBySelect.add(new Option(fieldLabel, fieldKey));
+            });
+        }
     }
     
     // =============================================================================
     // EXPORT & REPORTING FUNCTIONS
     // =============================================================================
-
     function exportarExcel() {
         const workbook = XLSX.utils.book_new();
-        const dataKeys = {
-            'incidentes': 'Incidentes', 
-            'exploits': 'Exploits', 
-            'zero-days': 'ZeroDays', 
-            'cves': 'CVEs', 
-            'alertas': 'Alertas', 
-            'fuentes': 'Fuentes_Intel', 
-            'mitigaciones': 'Mitigaciones'
-        };
-
+        const dataKeys = { 'incidentes': 'Incidentes', 'exploits': 'Exploits', 'zero-days': 'ZeroDays', 'cves': 'CVEs', 'alertas': 'Alertas', 'fuentes': 'Fuentes_Intel', 'mitigaciones': 'Mitigaciones' };
         for (const key in dataKeys) {
-            const sheetName = dataKeys[key];
-            const data = ALL_DATA_CACHE[key] || [];
-            
-            if (data.length > 0) {
-                const cleanedData = data.map(item => {
-                    const { _id, __v, createdAt, updatedAt, ...rest } = item;
-                    return rest;
-                });
-                const ws = XLSX.utils.json_to_sheet(cleanedData);
-                XLSX.utils.book_append_sheet(workbook, ws, sheetName);
-            }
+            const sheetName = dataKeys[key]; const data = ALL_DATA_CACHE[key] || [];
+            if (data.length > 0) { const cleanedData = data.map(item => { const { _id, __v, createdAt, updatedAt, ...rest } = item; return rest; }); const ws = XLSX.utils.json_to_sheet(cleanedData); XLSX.utils.book_append_sheet(workbook, ws, sheetName); }
         }
         XLSX.writeFile(workbook, 'OSINT_Reporte_Completo_API.xlsx');
     }
-
     function handlePdfExportClick() {
-        const startDateStr = document.getElementById('reportStartDate').value;
-        const endDateStr = document.getElementById('reportEndDate').value;
-        if (!startDateStr || !endDateStr) {
-            alert('Por favor, seleccione una fecha de inicio y una fecha de fin para el reporte.');
-            return;
-        }
-        if (new Date(startDateStr) > new Date(endDateStr)) {
-            alert('La fecha de inicio no puede ser posterior a la fecha de fin.');
-            return;
-        }
+        const startDateStr = document.getElementById('reportStartDate').value; const endDateStr = document.getElementById('reportEndDate').value;
+        if (!startDateStr || !endDateStr) { alert('Por favor, seleccione una fecha de inicio y una fecha de fin para el reporte.'); return; }
+        if (new Date(startDateStr) > new Date(endDateStr)) { alert('La fecha de inicio no puede ser posterior a la fecha de fin.'); return; }
         generarReportePDF(startDateStr, endDateStr);
     }
-async function generarReportePDF(startDateStr, endDateStr) {
+    async function generarReportePDF(startDateStr, endDateStr) {
     // 1. VERIFICACIÓN Y CONFIGURACIÓN INICIAL
     if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
         alert('Error: La librería principal jsPDF no se cargó correctamente.');
@@ -1860,17 +1983,178 @@ async function generarReportePDF(startDateStr, endDateStr) {
         previewDiv.innerHTML = reporteHTML;
     }
 
-        // =============================================================================
-    // EXPORT & REPORTING FUNCTIONS (Puedes añadir las nuevas funciones aquí debajo)
-    // =============================================================================
+     // =============================================================================
+// NUEVAS FUNCIONES PARA GENERAR Y DESCARGAR EL CORREO HTML
+// =============================================================================
 
-    /* ... aquí van tus funciones existentes como exportarExcel(), generarReportePDF(), etc. ... */
+/**
+ * Función principal que se activa al hacer clic en el nuevo botón.
+ * Orquesta la recolección de datos, el análisis y la descarga.
+ */
+function descargarCorreoHTML() {
+    const startDateStr = document.getElementById('reportStartDate').value;
+    const endDateStr = document.getElementById('reportEndDate').value;
 
-    /**
-     * Maneja la selección de un archivo Excel para importación.
-     * Lee el archivo, lo procesa por hojas y envía los datos a la API.
-     * @param {Event} event - El evento del input de archivo.
-     */
+    if (!startDateStr || !endDateStr) {
+        alert('Por favor, seleccione una fecha de inicio y una fecha de fin para generar el correo.');
+        return;
+    }
+    if (new Date(startDateStr) > new Date(endDateStr)) {
+        alert('La fecha de inicio no puede ser posterior a la fecha de fin.');
+        return;
+    }
+
+    // --- Filtrar los datos desde la caché ---
+    // Se usa UTC para evitar problemas de zona horaria que restan un día.
+    const sDateParts = startDateStr.split('-').map(Number);
+    const sDate = new Date(Date.UTC(sDateParts[0], sDateParts[1] - 1, sDateParts[2]));
+
+    const eDateParts = endDateStr.split('-');
+    const eDate = new Date(Date.UTC(eDateParts[0], eDateParts[1] - 1, eDateParts[2], 23, 59, 59, 999));
+
+    const filterByDate = item => {
+        if (!item.fecha) return false;
+        const itemDate = new Date(item.fecha);
+        return itemDate >= sDate && itemDate <= eDate;
+    };
+    
+    // Objeto para almacenar los datos filtrados
+    const data = {};
+    for (const key in ALL_DATA_CACHE) {
+        data[key.replace('-', '')] = (ALL_DATA_CACHE[key] || []).filter(filterByDate);
+    }
+    
+    // --- Generar y descargar el archivo ---
+    const emailHtml = generarPlantillaCorreo(data, sDate);
+    descargarArchivoHTML(emailHtml, startDateStr, endDateStr);
+}
+
+
+/**
+ * Toma los datos filtrados y los inserta en la plantilla de correo.
+ * @param {object} data - Objeto con los arrays de datos filtrados (incidentes, cves, etc.).
+ * @param {Date} startDate - La fecha de inicio para determinar el mes y año.
+ * @returns {string} - El código HTML completo y rellenado del correo.
+ */
+function generarPlantillaCorreo(data, startDate) {
+    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+    const reportMonth = monthNames[startDate.getUTCMonth()];
+    const reportYear = startDate.getUTCFullYear();
+    
+    // Lógica de análisis para el resumen ejecutivo
+    const criticalCvesCount = data.cves.filter(c => c.cvss >= 9.0).length;
+    const topSectors = [...new Set(data.incidentes.map(i => i.sector).filter(Boolean))].slice(0, 2).join(' y ');
+    const topActors = [...new Set(data.incidentes.map(i => i.actor).filter(a => a && a.toLowerCase() !== 'desconocido'))].slice(0, 2).join(', ');
+
+    // Obtener la plantilla y reemplazar los placeholders
+    let template = obtenerPlantillaString(); // Llamamos a la función que contiene el HTML
+
+    template = template.replace(/\[Mes\]/g, reportMonth);
+    template = template.replace(/\[Año\]/g, reportYear);
+    
+    // Rellenar resumen
+    template = template.replace('[Número de CVEs]', data.cves.length);
+    template = template.replace('[Número de CVEs Críticos]', criticalCvesCount);
+    template = template.replace('[Número de Incidentes]', data.incidentes.length);
+    template = template.replace('[Sectores más Afectados]', topSectors || 'diversos');
+    template = template.replace('[Actores de Amenaza Destacados]', topActors || 'varios');
+    template = template.replace('[Número de Zero-Days]', data.zerodays.length);
+    template = template.replace('[Número de Exploits]', data.exploits.length);
+
+    // Rellenar estadísticas (ya que se quitaron, los placeholders están comentados, pero es útil mantenerlos por si se reincorporan)
+    /*
+    template = template.replace('>[XX]</span><br>...Incidentes', `>${data.incidentes.length}</span><br>...Incidentes`);
+    template = template.replace('>[XX]</span><br>...Exploits', `>${data.exploits.length}</span><br>...Exploits`);
+    ...etc
+    */
+    
+    return template;
+}
+
+/**
+ * Función auxiliar para descargar el contenido HTML como un archivo.
+ * @param {string} htmlContent - El HTML completo del correo.
+ * @param {string} startDate - Fecha de inicio para nombrar el archivo.
+ * @param {string} endDate - Fecha de fin para nombrar el archivo.
+ */
+function descargarArchivoHTML(htmlContent, startDate, endDate) {
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    const fileName = `Boletin_CTI_${startDate.replace(/-/g, '')}_al_${endDate.replace(/-/g, '')}.html`;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+
+/**
+ * Contiene la plantilla de correo como un string para mantener el código organizado.
+ * @returns {string}
+ */
+function obtenerPlantillaString() {
+    return `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Threat Intelligence Brief | [Mes] [Año]</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
+
+    <table border="0" cellpadding="0" cellspacing="0" width="100%">
+        <tr>
+            <td style="padding: 20px 0 30px 0;" align="center">
+                <table align="center" border="0" cellpadding="0" cellspacing="0" width="700" style="border-collapse: collapse; background-color: #ffffff; border: 1px solid #e0e6ed; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <tr>
+                        <td align="left" style="padding: 30px 30px 20px 30px; background-color: #6A3093; color: #FFFFFF;">
+                            <h1 style="margin: 0; font-size: 24px; font-family: 'Roboto', Arial, sans-serif;">Cyber Threat Intelligence Brief</h1>
+                            <p style="margin: 5px 0 0; font-size: 16px; font-family: 'Roboto', Arial, sans-serif; color: #FFFFFF;">Informe de [Mes] [Año]</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 30px 30px 20px 30px;">
+                            <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">
+                                Estimados, compartimos el resumen ejecutivo de la actividad de amenazas correspondiente al último período. El informe completo se encuentra adjunto.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0 30px 30px 30px;">
+                            <h2 style="font-size: 20px; color: #1c1c1c; margin: 0 0 15px 0; border-bottom: 2px solid #e0e6ed; padding-bottom: 10px;">Resumen Ejecutivo</h2>
+                            <div style="background-color: #F8F9FA; padding: 20px; border-left: 4px solid #6A3093;">
+                                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">
+                                    Análisis correspondiente al mes de <strong>[Mes] de [Año]</strong>. Durante este tiempo, se publicaron <strong>[Número de CVEs]</strong> nuevas vulnerabilidades, de las cuales <strong>[Número de CVEs Críticos]</strong> se calificaron como críticas (CVSS 9.0+). Se registraron <strong>[Número de Incidentes]</strong> incidentes relevantes, con especial afectación al sector <strong>[Sectores más Afectados]</strong>. Los grupos de amenaza más destacados fueron <strong>[Actores de Amenaza Destacados]</strong>.
+                                    <br><br>
+                                    Además, se descubrieron <strong>[Número de Zero-Days]</strong> nuevas vulnerabilidades de día cero y se publicaron <strong>[Número de Exploits]</strong> exploits con prueba de concepto.
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding: 30px 30px 40px 30px; background-color: #F8F9FA;">
+                            <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">
+                                Para un análisis exhaustivo y el listado completo de todos los eventos, por favor revise el informe PDF completo adjunto.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px 30px 20px 30px; text-align: center; color: #888888; font-size: 12px; background-color: #e9ecef;">
+                            <p style="margin: 0;">
+                                Este reporte es clasificado como TLP:CLEAR (<a href="https://first.org/tlp/" style="color: #2574A9; text-decoration: none;">https://first.org/tlp/</a>)
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    </body>
+    </html>
+    `;
+}
     async function handleExcelImport(event) {
         const file = event.target.files[0];
         if (!file) {
