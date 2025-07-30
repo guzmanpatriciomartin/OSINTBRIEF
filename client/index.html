@@ -780,40 +780,176 @@
     }
     
     // =============================================================================
-    // LÓGICA DE CONEXIÓN CON API Y GESTIÓN DE DATOS (CRUD)
-    // =============================================================================
-    async function guardarDato(tipo, dato) {
-        const id = dato._id; if (id) { delete dato._id; }
-        const url = id ? `${API_BASE_URL}/${tipo}/${id}` : `${API_BASE_URL}/${tipo}`;
-        const method = id ? 'PUT' : 'POST';
-        try {
-            const response = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dato) });
-            if (!response.ok) { const errorData = await response.json(); throw new Error(errorData.message || `Error ${response.status}`); }
-            await fetchAndCacheAllData(true);
-        } catch (error) {
-            console.error(`Error al guardar en '${tipo}':`, error);
-            alert(`No se pudo guardar el registro: ${error.message}`);
-            throw error;
-        }
+// LÓGICA DE CONEXIÓN CON API Y GESTIÓN DE DATOS (CRUD) - VERSIÓN CORREGIDA Y COMPLETA
+// =============================================================================
+
+async function guardarDato(tipo, dato) {
+    const id = dato._id;
+    if (id) {
+        delete dato._id;
     }
 
-    async function eliminarRegistro(tipo, id) {
-        if (!confirm('¿Estás seguro de que quieres eliminar este registro?')) return;
-        const endpoint = tipo === 'zeroDays' ? 'zero-days' : tipo;
-        try {
-            const response = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, { method: 'DELETE' });
-            if (!response.ok && response.status !== 204) { const errorData = await response.json(); throw new Error(errorData.message || `Error ${response.status}`);}
-            await fetchAndCacheAllData(true);
-            await mostrarDatos(tipo);
-        } catch (error) {
-            console.error(`Error al eliminar en ${endpoint}:`, error);
-            alert(`No se pudo eliminar el registro: ${error.message}`);
+    const endpoint = tipo === 'zeroDays' ? 'zero-days' : tipo;
+    const url = id ? `${API_BASE_URL}/${endpoint}/${id}` : `${API_BASE_URL}/${endpoint}`;
+    const method = id ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dato)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Error ${response.status}`);
         }
+        
+        // 1. Refrescar toda la caché de datos
+        await fetchAndCacheAllData();
+        
+        // 2. Redibujar la tabla de la pestaña actual
+        await mostrarDatos(tipo);
+
+        // 3. Si el dashboard está activo, redibujarlo también
+        if (document.getElementById('dashboard').classList.contains('active')) {
+           await renderDashboard(); // Asegúrate de que esta función se llame renderDashboard si la cambiaste
+        }
+
+    } catch (error) {
+        console.error(`Error al guardar en '${tipo}':`, error);
+        alert(`No se pudo guardar el registro: ${error.message}`);
+        throw error;
+    }
+}
+
+async function eliminarRegistro(endpoint, id) {
+    if (!confirm('¿Estás seguro de que quieres eliminar este registro?')) return;
+    
+    // Convertir el endpoint de la API al tipo usado en la UI (ej. 'zero-days' -> 'zeroDays')
+    const uiType = endpoint.includes('-') ? endpoint.split('-').map((word, index) => index > 0 ? capitalFirstLetter(word) : word).join('') : endpoint;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (!response.ok && response.status !== 204) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Error ${response.status}`);
+        }
+        
+        await fetchAndCacheAllData();
+        await mostrarDatos(uiType);
+
+        if (document.getElementById('dashboard').classList.contains('active')) {
+           await renderDashboard();
+        }
+        console.log(`Registro ${id} de ${endpoint} eliminado con éxito.`);
+
+    } catch (error) {
+        console.error(`Error al eliminar en ${endpoint}:`, error);
+        alert(`No se pudo eliminar el registro: ${error.message}`);
+    }
+}
+
+
+/**
+ * FUNCIÓN CLAVE FALTANTE: Dibuja el contenido de las tablas de datos.
+ */
+async function mostrarDatos(tipo) {
+    // Convierte el tipo de la UI (ej. 'zeroDays') al endpoint de la API (ej. 'zero-days')
+    const endpoint = tipo === 'zeroDays' ? 'zero-days' : tipo;
+    const tablaId = tipo === 'cves' ? 'tablaCVEs' : `tabla${capitalFirstLetter(tipo)}`;
+    
+    const tbody = document.querySelector(`#${tablaId} tbody`);
+    if (!tbody) {
+        console.error(`Error: No se encontró el cuerpo de la tabla con id: #${tablaId}`);
+        return;
+    }
+    
+    const datos = ALL_DATA_CACHE[endpoint] || [];
+    tbody.innerHTML = ''; // Limpiar la tabla
+
+    const formatDisplayDate = (isoDate) => isoDate ? new Date(isoDate).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : 'N/A';
+
+    if (datos.length === 0) {
+        const row = tbody.insertRow();
+        const cell = row.insertCell();
+        const colCount = document.querySelector(`#${tablaId} thead th`).length;
+        cell.colSpan = colCount > 0 ? colCount : 7; // Default a 7 si falla
+        cell.textContent = 'No hay registros para mostrar.';
+        cell.style.textAlign = 'center';
+        return;
+    }
+    
+    datos.forEach((dato) => {
+        const row = document.createElement('tr');
+        let cells = '';
+        
+        const refLink = dato.url ? ` <a href="${dato.url}" target="_blank" rel="noopener noreferrer" title="${dato.url}"><i class="fa-solid fa-link fa-xs"></i></a>` : '';
+
+        // Construcción de celdas según el tipo de dato
+        switch (tipo) {
+            case 'incidentes':
+                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.entidad || ''}${refLink}</td><td><span class="badge badge-country">${dato.pais || 'N/A'}</span></td><td><span class="badge badge-sector">${dato.sector || 'N/A'}</span></td><td>${dato.tipo || ''}</td><td>${dato.actor || 'Desconocido'}</td>`;
+                break;
+            case 'exploits':
+                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.nombre || ''}${refLink}</td><td>${dato.tipo || ''}</td><td>${dato.plataforma || ''}</td><td>${dato.cve || 'N/A'}</td>`;
+                break;
+            case 'zeroDays':
+                cells = `<td>${dato.idZD || 'N/A'}</td><td>${dato.nombre || ''}${refLink}</td><td>${dato.plataforma || ''}</td><td>${formatDisplayDate(dato.fecha)}</td><td><span class="badge ${getSeverityClass(dato.cvss)}">${getSeverityText(dato.cvss)} (${dato.cvss || 'N/A'})</span></td><td><span class="badge ${getBadgeClassForZeroDayEstado(dato.estado)}">${dato.estado || ''}</span></td>`;
+                break;
+            case 'cves':
+                cells = `<td>${dato.cveId || ''}${refLink}</td><td>${dato.aplicativo || ''}</td><td>${formatDisplayDate(dato.fecha)}</td><td><span class="badge ${getSeverityClass(dato.cvss)}">${getSeverityText(dato.cvss)} (${dato.cvss || 'N/A'})</span></td><td>${dato.estado || ''}</td>`;
+                break;
+            case 'alertas':
+                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.titulo || ''}${refLink}</td><td><span class="badge ${getSeverityClass(dato.criticidad, true)}">${dato.criticidad || ''}</span></td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
+                break;
+            case 'fuentes':
+                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.nombre || ''}</td><td>${dato.tipo || ''}</td><td>${dato.url ? `<a href="${dato.url}" target="_blank" rel="noopener noreferrer" title="${dato.url}">Link <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i></a>` : 'N/A'}</td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
+                break;
+            case 'mitigaciones':
+                cells = `<td>${dato.titulo || ''}${refLink}</td><td>${dato.categoria || ''}</td><td><span class="badge ${getSeverityClass(dato.prioridad, true)}">${dato.prioridad || ''}</span></td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
+                break;
+        }
+        
+        // Botones de acciones
+        const editButtonHTML = `<button class="btn btn-edit" onclick="handleEditClick('${tipo}', '${dato._id}')"><i class="fa-solid fa-pencil"></i></button>`;
+        const deleteButtonHTML = `<button class="btn btn-danger" onclick="eliminarRegistro('${endpoint}', '${dato._id}')"><i class="fa-solid fa-trash"></i></button>`;
+
+        row.innerHTML = `${cells}<td class="actions-cell">${editButtonHTML}${deleteButtonHTML}</td>`;
+        tbody.appendChild(row);
+    });
+}
+
+/**
+ * FUNCIÓN CLAVE FALTANTE: Maneja el clic en el botón de editar.
+ */
+function handleEditClick(type, id) {
+    const endpoint = type === 'zeroDays' ? 'zero-days' : type;
+    const item = ALL_DATA_CACHE[endpoint]?.find(d => d._id === id);
+
+    if (!item) {
+        console.error(`Item with ID ${id} not found for type ${type}`);
+        alert("No se pudo encontrar el registro para editar.");
+        return;
     }
 
-    // =============================================================================
-    // LÓGICA GENERAL DE LA APLICACIÓN (UI, NAVEGACIÓN, INICIALIZACIÓN)
-    // =============================================================================
+    const editFunctions = {
+        incidentes: populateIncidenteFormForEdit,
+        exploits: populateExploitFormForEdit,
+        zeroDays: populateZeroDayFormForEdit,
+        cves: populateCveFormForEdit,
+        alertas: populateAlertaFormForEdit,
+        fuentes: populateFuenteFormForEdit,
+        mitigaciones: populateMitigacionFormForEdit
+    };
+
+    if (editFunctions[type]) {
+        editFunctions[type](item);
+    }
+}
     function parseCssVariables() {
         const styleSheets = Array.from(document.styleSheets).filter(sheet => { try { return sheet.cssRules; } catch (e) { return false; } });
         for (const sheet of styleSheets) { for (const rule of Array.from(sheet.cssRules)) { if (rule.style && rule.selectorText === ':root') { for (let i = 0; i < rule.style.length; i++) { const name = rule.style[i]; if (name.startsWith('--')) { const value = rule.style.getPropertyValue(name).trim(); if (value.startsWith('#')) {  const hex = value.substring(1); const bigint = parseInt(hex, 16); ROOT_CSS_VARIABLES[name] = { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255, hex: value }; } else { ROOT_CSS_VARIABLES[name] = value; } } } return; } } }
@@ -1229,7 +1365,25 @@
             default: return 'ℹ️'; 
         }
     }
-    
+    /**
+ * FUNCIÓN FALTANTE: Devuelve la clase CSS correcta para el estado de un Zero Day.
+ */
+function getBadgeClassForZeroDayEstado(estado) {
+    switch (String(estado)?.toLowerCase()) {
+        case 'activo':
+            return 'badge-estado-activo';
+        case 'mitigado':
+            return 'badge-estado-mitigado';
+        case 'en investigación':
+        case 'investigacion':
+            return 'badge-estado-investigacion';
+        case 'prueba de concepto':
+        case 'pruebadeconcepto':
+            return 'badge-estado-poc';
+        default:
+            return 'badge-info'; // Un color por defecto para estados no definidos
+    }
+}
     function renderDashboardAllAlerts(container, alertas) {
         container.innerHTML = ''; 
         if (!alertas || alertas.length === 0) {
