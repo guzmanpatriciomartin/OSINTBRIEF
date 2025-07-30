@@ -1766,7 +1766,7 @@ function getBadgeClassForZeroDayEstado(estado) {
         yPos += 5;
 
         if (config.description) {
-            const descLines = doc.splitTextToSize(`Descripción: ${config.description}`, availableWidth);
+            const descLines = doc.splitTextToSize(`${config.description}`, availableWidth);
             doc.text(descLines, margin, yPos);
             yPos += doc.getTextDimensions(descLines).h;
         }
