@@ -1,11 +1,11 @@
-// --- START OF FILE server.js ---
-
 // 1. IMPORTAR LOS PAQUETES
 require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
+const axios = require('axios');
+
 // 2. INICIALIZAR LA APLICACIÓN Y PUERTO
 const app = express();
 const PORT = 3000;
@@ -14,9 +14,8 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json()); // Middleware para parsear bodies de requests JSON
 app.use(express.static(path.join(__dirname, '..', 'client')));
-// 4. CONEXIÓN A LA BASE DE DATOS REMOTA (SINTAXIS ACTUALIZADA)
-// ADVERTENCIA: Hardcodear la URI de conexión es una mala práctica de seguridad.
-// En un entorno de producción, utiliza variables de entorno.
+
+// 4. CONEXIÓN A LA BASE DE DATOS REMOTA
 const dbURI = process.env.DB_URI
 mongoose.connect(dbURI)
 .then(() => console.log(`ÉXITO: Conectado a la base de datos remota de MongoDB Atlas en el cluster "Cluster0"`))
@@ -93,7 +92,7 @@ const createCrudRoutesFor = (modelName, model) => {
     return router;
 };
 
-// --- Router específico para CVEs (Preservado de la versión del usuario) ---
+// --- Router específico para CVEs ---
 const cveRouter = express.Router();
 
 // GET all CVEs
@@ -149,6 +148,79 @@ cveRouter.delete('/:id', async (req, res) => {
     }
 });
 
+// =============================================================================
+// ENDPOINT ESPECIAL PARA DETALLES DE CVE (CÓDIGO INTEGRADO AQUÍ)
+// =============================================================================
+apiRouter.get('/cve-details/:cveId', async (req, res) => {
+    const { cveId } = req.params;
+    const nvdUrl = `https://services.nvd.nist.gov/rest/json/cves/2.0?cveId=${cveId}`;
+    const circlUrl = `https://cve.circl.lu/api/cve/${cveId}`;
+
+    try {
+        // --- Intento #1: API Oficial NVD (sin clave, con rate limit bajo) ---
+        console.log(`Intentando obtener ${cveId} desde la API de NVD...`);
+        const nvdResponse = await axios.get(nvdUrl);
+
+        if (nvdResponse.data && nvdResponse.data.vulnerabilities && nvdResponse.data.vulnerabilities.length > 0) {
+            const vulnerability = nvdResponse.data.vulnerabilities[0].cve;
+            let cvssScore = 0;
+            let severity = 'N/A';
+
+            // Busca la métrica CVSS más relevante (v3.1 es la preferida)
+            if (vulnerability.metrics.cvssMetricV31) {
+                cvssScore = vulnerability.metrics.cvssMetricV31[0].cvssData.baseScore;
+                severity = vulnerability.metrics.cvssMetricV31[0].cvssData.baseSeverity;
+            } else if (vulnerability.metrics.cvssMetricV30) {
+                cvssScore = vulnerability.metrics.cvssMetricV30[0].cvssData.baseScore;
+                severity = vulnerability.metrics.cvssMetricV30[0].cvssData.baseSeverity;
+            }
+
+            console.log(`Éxito con NVD para ${cveId}`);
+            return res.status(200).json({
+                cveId: vulnerability.id,
+                cvss: cvssScore,
+                severity: severity,
+                description: (vulnerability.descriptions.find(d => d.lang === 'en') || {}).value || 'No description.'
+            });
+        }
+        // Si NVD responde pero no encuentra el CVE, lanza un error para pasar al fallback
+        throw new Error("CVE not found in NVD, trying fallback.");
+
+    } catch (nvdError) {
+        console.warn(`La API de NVD falló para ${cveId} (razón: ${nvdError.message}). Intentando con el fallback de CIRCL...`);
+
+        // --- Intento #2: API de Respaldo CIRCL ---
+        try {
+            const circlResponse = await axios.get(circlUrl);
+
+            if (!circlResponse.data || Object.keys(circlResponse.data).length === 0) {
+                return res.status(404).json({ message: `CVE ID ${cveId} no se encontró en ninguna fuente.` });
+            }
+
+            const cveData = circlResponse.data;
+            const cvssScore = cveData.cvss || 0;
+            
+            let severity = 'N/A';
+            if (cvssScore >= 9.0) severity = 'CRITICAL';
+            else if (cvssScore >= 7.0) severity = 'HIGH';
+            else if (cvssScore >= 4.0) severity = 'MEDIUM';
+            else if (cvssScore > 0) severity = 'LOW';
+            
+            console.log(`Éxito con CIRCL para ${cveId}`);
+            return res.status(200).json({
+                cveId: cveData.id,
+                cvss: cvssScore,
+                severity: severity,
+                description: cveData.summary || 'No description available.'
+            });
+
+        } catch (circlError) {
+            console.error(`El fallback de CIRCL también falló para ${cveId} (razón: ${circlError.message}).`);
+            return res.status(500).json({ message: 'Ambas APIs (NVD y CIRCL) fallaron al obtener los datos del CVE.' });
+        }
+    }
+});
+
 
 // --- Asignación de Rutas a la API ---
 apiRouter.use('/incidentes', createCrudRoutesFor('incidentes', Incidente));
@@ -161,12 +233,15 @@ apiRouter.use('/cves', cveRouter);
 
 // Montamos nuestro router principal de la API en la ruta /api
 app.use('/api', apiRouter);
+
+// Servir el frontend para cualquier otra ruta
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '..', 'client', 'index.html'));
 });
+
 // 7. INICIAR EL SERVIDOR
 app.listen(PORT, () => {
     console.log(`Servidor iniciado y escuchando en http://localhost:${PORT}`);
-    console.log(`Frontend disponible en http://localhost:${PORT}`); // Mensaje actualizado
+    console.log(`Frontend disponible en http://localhost:${PORT}`);
     console.log(`API disponible en http://localhost:${PORT}/api`);
 });

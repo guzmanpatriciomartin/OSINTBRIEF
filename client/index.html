@@ -1493,46 +1493,94 @@
 
         } catch (error) { loader.innerHTML = `<strong>Error:</strong> ${error.message}.`; }
     }
-    
-    async function renderExploitEpssWidget(container, widget) {
-         container.innerHTML = `<div class="epss-dashboard exploit">
-            <div class="epss-loader" id="loader-${widget.id}">Cargando datos...</div>
-            <div id="stats-${widget.id}" style="display: none;"></div>
-            <div class="epss-content-grid" id="content-${widget.id}" style="display: none;">
-                <div class="chart-container"><canvas id="chart-${widget.id}"></canvas></div>
-                <div class="table-container"><h3>Exploits de Alto Riesgo</h3><div id="table-${widget.id}"></div></div>
-            </div>
+
+async function renderExploitEpssWidget(container, widget) {
+    container.innerHTML = `<div class="epss-dashboard exploit">
+        <div class="epss-loader" id="loader-${widget.id}">Cargando y correlacionando datos...</div>
+        <div id="stats-${widget.id}" style="display: none;"></div>
+        <div class="epss-content-grid" id="content-${widget.id}" style="display: none;">
+            <div class="chart-container"><canvas id="chart-${widget.id}"></canvas></div>
+            <div class="table-container"><h3>Exploits de Alto Riesgo</h3><div id="table-${widget.id}"></div></div>
+        </div>
+    </div>`;
+    const loader = document.getElementById(`loader-${widget.id}`);
+
+    try {
+        const { exploits, cves } = getFilteredData();
+        const exploitsWithCVEs = (exploits || []).filter(e => e.cve && e.cve.trim() !== '');
+        
+        if (!exploitsWithCVEs.length) {
+            loader.innerHTML = 'No hay exploits con CVEs asociados en el período seleccionado.';
+            return;
+        }
+
+        const cveMap = (cves || []).reduce((map, cve) => {
+            map[cve.cveId.toUpperCase().trim()] = cve;
+            return map;
+        }, {});
+
+        loader.textContent = `Analizando ${exploitsWithCVEs.length} exploits (consultando CVSS y EPSS)...`;
+
+        const enrichmentPromises = exploitsWithCVEs.map(async (exploit) => {
+            const cveId = exploit.cve.replace(/\s+/g, '-').toUpperCase().trim();
+            let cvss = -1; // Usamos -1 como indicador de "no encontrado" o "error"
+            let epssScore = 0;
+
+            // --- 1. Obtener CVSS (de la caché local o del backend) ---
+            if (cveMap[cveId]) {
+                cvss = cveMap[cveId].cvss || 0;
+            } else {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/cve-details/${cveId}`);
+                    if (response.ok) {
+                        const cveDetails = await response.json();
+                        cvss = cveDetails.cvss;
+                    } else {
+                         console.warn(`[CVSS Fetch] El backend respondió con error ${response.status} para ${cveId}`);
+                    }
+                } catch (e) {
+                    console.error(`[CVSS Fetch] Fallo de red al consultar ${cveId}:`, e.message);
+                }
+            }
+
+            // --- 2. Obtener EPSS (directamente de la API externa) ---
+            try {
+                const epssRes = await fetch(`${EPSS_API_URL}${cveId}`);
+                if (epssRes.ok) {
+                    const epssData = await epssRes.json();
+                    epssScore = (epssData?.data.length > 0) ? parseFloat(epssData.data[0].epss) : 0;
+                } else {
+                    console.warn(`[EPSS Fetch] La API de EPSS respondió con error ${epssRes.status} para ${cveId}`);
+                }
+            } catch(e) {
+                console.error(`[EPSS Fetch] Fallo de red al consultar EPSS para ${cveId}:`, e.message);
+            }
+            
+            // Si el CVSS no se pudo encontrar (-1), lo convertimos a 0 para que el gráfico no falle.
+            return { ...exploit, cve: cveId, cvss: cvss < 0 ? 0 : cvss, epssScore };
+        });
+
+        const enrichedData = await Promise.all(enrichmentPromises);
+
+        const highPriority = enrichedData.filter(e => e.epssScore > 0.5);
+        document.getElementById(`stats-${widget.id}`).innerHTML = `<div class="epss-stats-grid">
+            <div class="epss-stat-card"><div class="epss-stat-value">${enrichedData.length}</div><div class="epss-stat-label">Exploits Analizados</div></div>
+            <div class="epss-stat-card"><div class="epss-stat-value">${highPriority.length}</div><div class="epss-stat-label">Alto Riesgo (>50%)</div></div>
         </div>`;
-        const loader = document.getElementById(`loader-${widget.id}`);
-        try {
-            const { exploits, cves } = getFilteredData();
-            const exploitsWithCVEs = (exploits || []).filter(e => e.cve && e.cve.trim() !== '');
-            if (!exploitsWithCVEs.length) { loader.innerHTML = 'No hay exploits con CVEs asociados en el período seleccionado.'; return; }
 
-            loader.textContent = `Analizando ${exploitsWithCVEs.length} exploits...`;
-            const cveMap = (cves || []).reduce((map, cve) => { map[cve.cveId] = cve; return map; }, {});
-            const epssPromises = exploitsWithCVEs.map(e => fetch(`${EPSS_API_URL}${e.cve}`).then(res => res.ok ? res.json() : null));
-            const epssResults = await Promise.all(epssPromises);
-            
-            const enrichedData = exploitsWithCVEs.map((e, i) => ({ ...e, cvss: cveMap[e.cve]?.cvss || 0, epssScore: (epssResults[i]?.data.length > 0) ? parseFloat(epssResults[i].data[0].epss) : 0 }));
-            
-            const highPriority = enrichedData.filter(e => e.epssScore > 0.5);
-            document.getElementById(`stats-${widget.id}`).innerHTML = `<div class="epss-stats-grid">
-                <div class="epss-stat-card"><div class="epss-stat-value">${enrichedData.length}</div><div class="epss-stat-label">Exploits Analizados</div></div>
-                <div class="epss-stat-card"><div class="epss-stat-value">${highPriority.length}</div><div class="epss-stat-label">Alto Riesgo (>50%)</div></div>
-            </div>`;
+        renderScatterChart(document.getElementById(`chart-${widget.id}`), enrichedData, 'exploit');
+        renderPriorityTable(document.getElementById(`table-${widget.id}`), highPriority.sort((a,b) => b.epssScore - a.epssScore), ['nombre', 'cve', 'epssScore']);
 
-            renderScatterChart(document.getElementById(`chart-${widget.id}`), enrichedData, 'exploit');
-            renderPriorityTable(document.getElementById(`table-${widget.id}`), highPriority.sort((a,b) => b.epssScore - a.epssScore), ['nombre', 'cve', 'epssScore']);
+        loader.style.display = 'none';
+        document.getElementById(`stats-${widget.id}`).style.display = 'block';
+        document.getElementById(`content-${widget.id}`).style.display = 'grid';
 
-            loader.style.display = 'none';
-            document.getElementById(`stats-${widget.id}`).style.display = 'block';
-            document.getElementById(`content-${widget.id}`).style.display = 'grid';
-
-        } catch (error) { loader.innerHTML = `<strong>Error:</strong> ${error.message}.`; }
+    } catch (error) {
+        loader.innerHTML = `<strong>Error al renderizar el widget de análisis de exploits:</strong> ${error.message}.`;
+        console.error("Error in renderExploitEpssWidget:", error);
     }
-
-    function renderScatterChart(canvas, data, type) {
+} 
+   function renderScatterChart(canvas, data, type) {
         const options = {
             cve: { color: 'var(--primary-cve)', tooltip: c => [c.raw.cveId, `CVSS: ${c.raw.x.toFixed(1)}`, `EPSS: ${(c.raw.y * 100).toFixed(2)}%`] },
             exploit: { color: 'var(--primary-exploit)', tooltip: c => [c.raw.nombre, `CVE: ${c.raw.cve}`, `CVSS: ${c.raw.x > 0 ? c.raw.x.toFixed(1) : 'N/A'}`, `EPSS: ${(c.raw.y * 100).toFixed(2)}%`] }
@@ -1650,41 +1698,65 @@
         });
     }
 
-    function renderExploitsWithSeverityTable(widget, container) {
-        const filteredData = getFilteredData();
-        container.innerHTML = `<div class="table-container"><table id="table-${widget.id}"><thead></thead><tbody></tbody></table></div>`;
-        const table = document.getElementById(`table-${widget.id}`);
-        const exploits = filteredData.exploits || [];
-        const cves = filteredData.cves || [];
-        
-        const cveCvssMap = cves.reduce((map, cve) => {
-            map[cve.cveId] = cve.cvss;
-            return map;
-        }, {});
+    async function renderExploitsWithSeverityTable(widget, container) {
+    const filteredData = getFilteredData();
+    container.innerHTML = `<div class="table-container"><table id="table-${widget.id}"><thead></thead><tbody></tbody></table></div>`;
+    const table = document.getElementById(`table-${widget.id}`);
+    const exploits = filteredData.exploits || [];
+    const cves = filteredData.cves || [];
 
-        const enrichedExploits = exploits.map(exploit => ({
-            ...exploit,
-            cvss: cveCvssMap[exploit.cve] || 0 // Asignar 0 si no se encuentra el CVE
-        })).sort((a, b) => b.cvss - a.cvss); // Ordenar por CVSS descendente
-
-        if (enrichedExploits.length === 0) {
-            container.innerHTML = `<p>No hay exploits para mostrar en el período seleccionado.</p>`;
-            return;
-        }
-
-        const headers = `<tr><th>Nombre del Exploit</th><th>CVE Asociado</th><th>Severidad (CVSS)</th></tr>`;
-        const bodyHTML = enrichedExploits.map(item => `
-            <tr>
-                <td>${item.nombre}</td>
-                <td>${item.cve || 'N/A'}</td>
-                <td><span class="badge ${getSeverityClass(item.cvss)}">${getSeverityText(item.cvss)} (${item.cvss})</span></td>
-            </tr>`).join('');
-
-        table.querySelector('thead').innerHTML = headers;
-        table.querySelector('tbody').innerHTML = bodyHTML;
+    if (exploits.length === 0) {
+        container.innerHTML = `<p>No hay exploits para mostrar en el período seleccionado.</p>`;
+        return;
     }
 
+    const cveCvssMap = cves.reduce((map, cve) => {
+        map[cve.cveId.toUpperCase().trim()] = cve.cvss;
+        return map;
+    }, {});
+    
+    // 1. Enriquecimiento inicial y preparación de peticiones
+    const enrichmentPromises = exploits.map(async (exploit) => {
+        const cveId = exploit.cve ? exploit.cve.toUpperCase().trim() : null;
+        let cvss = 0;
 
+        if (cveId) {
+            if (cveCvssMap[cveId] !== undefined) {
+                cvss = cveCvssMap[cveId];
+            } else {
+                // Si no está en local, consulta la API
+                try {
+                    const response = await fetch(`${API_BASE_URL}/cve-details/${cveId}`);
+                    if (response.ok) {
+                        const cveDetails = await response.json();
+                        cvss = cveDetails.cvss;
+                        // Opcional: añadir a la caché local para futuras búsquedas rápidas
+                        cveCvssMap[cveId] = cvss;
+                    }
+                } catch (e) {
+                    console.warn(`Could not fetch CVSS for ${cveId}`, e);
+                }
+            }
+        }
+        return { ...exploit, cve: cveId, cvss };
+    });
+    
+    const enrichedExploits = await Promise.all(enrichmentPromises);
+
+    // 2. Renderizar la tabla con los datos ya enriquecidos y ordenados
+    const sortedExploits = enrichedExploits.sort((a, b) => b.cvss - a.cvss);
+
+    const headers = `<tr><th>Nombre del Exploit</th><th>CVE Asociado</th><th>Severidad (CVSS)</th></tr>`;
+    const bodyHTML = sortedExploits.map(item => `
+        <tr>
+            <td>${item.nombre}</td>
+            <td>${item.cve || 'N/A'}</td>
+            <td><span class="badge ${getSeverityClass(item.cvss)}">${getSeverityText(item.cvss)} (${item.cvss || 'N/A'})</span></td>
+        </tr>`).join('');
+
+    table.querySelector('thead').innerHTML = headers;
+    table.querySelector('tbody').innerHTML = bodyHTML;
+}
     // =============================================================================
     // MODAL LOGIC (PARA EDICIÓN Y CREACIÓN)
     // =============================================================================
