@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OSINT BRIEF</title>
+    <title>OSINT BRIEF | CTI Dashboard</title>
 
     <!-- PWA Metadata -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#3498db">
+    <meta name="theme-color" content="#6a3093">
     <meta name="mobile-web-app-capable" content="yes">
 
-    <!-- Service Worker Registration (ensure sw.js and manifest.json exist) -->
+    <!-- Service Worker Registration -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('sw.js')
             .then(registration => console.log('ServiceWorker registration successful'))
-            .catch(err => console.log('ServiceWorker registration failed (likely due to file:///): ', err));
+            .catch(err => console.log('ServiceWorker registration failed: ', err));
         });
       }
     </script>
@@ -29,7 +29,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <!-- Font Awesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 
@@ -47,8 +46,12 @@
             --purple-gradient-start: #6a3093;
             --purple-gradient-end: #a044ff;
             --border-color: #e0e6ed;
-            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             --border-radius: 8px;
+            
+            /* Colores para Dashboards EPSS */
+            --primary-cve: #6a3093;
+            --primary-exploit: #c0392b;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -216,9 +219,12 @@
         
         /* Edit Mode & Widget Controls */
         .widget-header-controls { display: flex; align-items: center; gap: 10px; }
-        .download-chart-btn { background-color: var(--light); color: var(--primary); border: 1px solid var(--border-color); padding: 4px 8px; font-size: 0.8rem; margin: 0; }
-        .download-chart-btn:hover { background-color: var(--border-color); }
-        .delete-widget-btn { background-color: var(--danger); padding: 4px 8px; font-size: 0.8rem; margin: 0; }
+        .widget-control-btn { background-color: var(--light); color: var(--primary); border: 1px solid var(--border-color); padding: 4px 8px; font-size: 0.8rem; margin: 0; }
+        .widget-control-btn:hover { background-color: var(--border-color); }
+        .widget-control-btn.delete { background-color: var(--danger); color:white; }
+        .widget-control-btn.delete:hover { background-color: #c0392b; }
+        .widget-control-btn.edit { background-color: var(--warning); color:white; }
+        .widget-control-btn.edit:hover { background-color: #d68910; }
         
         /* Modal Styles */
         .modal {
@@ -273,6 +279,8 @@
         .badge-estado-mitigado { background-color: var(--success); color: white; }
         .badge-estado-investigacion { background-color: var(--warning); color: var(--dark); }
         .badge-estado-poc { background-color: var(--info); color: white; }
+        .badge-unknown { background-color: #7f8c8d; color: white; }
+
         .form-container {
             border: 1px solid var(--border-color); padding: 25px; border-radius: var(--border-radius); margin-bottom: 25px;
             background-color: #fdfdfe; display: none;
@@ -290,10 +298,28 @@
         .form-title-action h2 { margin: 0; }
         .form-title-action button { margin-right: 0; }
 
+        /* Estilos específicos para componentes EPSS */
+        .epss-loader {
+            text-align: center; padding: 50px; font-size: 1.2rem; color: #777; min-height: 400px;
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
+        }
+        .epss-stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px;
+        }
+        .epss-stat-card { text-align: center; padding: 15px; background-color: var(--light); border-radius: var(--border-radius); }
+        .epss-stat-value { font-size: 2.2rem; font-weight: 700; }
+        .epss-stat-label { font-size: 0.8rem; margin-top: 5px; color: #555; }
+        .epss-content-grid {
+            display: grid; grid-template-columns: 60% 40%; gap: 20px; flex-grow: 1;
+        }
+        .epss-dashboard.cve .epss-stat-value { color: var(--primary-cve); }
+        .epss-dashboard.exploit .epss-stat-value { color: var(--primary-exploit); }
+
 
         @media (max-width: 992px) { 
             .grid { grid-template-columns: repeat(6, 1fr); } 
             .col-12, .col-8, .col-6, .col-4 { grid-column: span 6; }
+            .epss-content-grid { grid-template-columns: 1fr; }
         }
         @media (max-width: 768px) {
             .main-content-area { padding: 15px; }
@@ -338,7 +364,7 @@
             </div>
         </header>
 
-        <div class="main-content-area">
+        <main class="main-content-area">
             <!-- Dashboard Tab -->
             <div id="dashboard" class="tab-content active">
                 <div style="background: transparent; box-shadow: none; padding:0;">
@@ -371,7 +397,7 @@
                         <button id="resetDashboardFilterBtn"><i class="fa-solid fa-arrows-rotate"></i>Resetear</button>
                         <div class="control-buttons">
                             <button id="toggleEditModeBtn"><i class="fa-solid fa-edit"></i> Editar Dashboard</button>
-                            <button id="addWidgetBtn" class="btn-success" style="display: none;"><i class="fa-solid fa-plus"></i> Añadir Nuevo Elemento</button>
+                            <button id="addWidgetBtn" class="btn-success" style="display: none;"><i class="fa-solid fa-plus"></i> Añadir Elemento</button>
                         </div>
                     </div>
 
@@ -382,14 +408,15 @@
                 </div>
             </div>
 
-            <!-- Add Widget Modal -->
-            <div id="addWidgetModal" class="modal">
+            <!-- Add/Edit Widget Modal -->
+            <div id="widgetModal" class="modal">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h2 class="modal-title">Añadir Nuevo Elemento al Dashboard</h2>
+                        <h2 class="modal-title" id="widgetModalTitle">Añadir Nuevo Elemento</h2>
                         <span class="close-modal">&times;</span>
                     </div>
-                    <form id="addWidgetForm">
+                    <form id="widgetForm">
+                        <input type="hidden" id="widgetEditId">
                         <div class="form-group">
                             <label for="widgetTitle">Título del Elemento</label>
                             <input type="text" id="widgetTitle" required placeholder="Ej: Incidentes por Sector">
@@ -455,7 +482,7 @@
                         </div>
 
                         <div class="action-buttons">
-                            <button type="submit" class="btn-success"><i class="fa-solid fa-plus"></i> Añadir Elemento</button>
+                            <button type="submit" class="btn-success" id="saveWidgetBtn"><i class="fa-solid fa-plus"></i> Añadir Elemento</button>
                         </div>
                     </form>
                 </div>
@@ -679,15 +706,17 @@
                 </div>
                 <div id="previewReporte" style="margin-top: 20px; padding: 15px; border: 1px solid #ddd; background: #f9f9f9; max-height: 600px; overflow-y: auto;">Presione "Previsualizar Reporte HTML" para ver.</div>
             </div></div>
-        </div> <!-- End Main Content Area -->
+        </main>
 
         <footer>Report builder app © <span id="currentYear"></span> | Datos obtenidos desde API.</footer>
     </div> 
+
 <script>
     // =============================================================================
     // CONFIGURACIÓN INICIAL Y VARIABLES GLOBALES
     // =============================================================================
     const API_BASE_URL = 'http://localhost:3000/api';
+    const EPSS_API_URL = 'https://api.first.org/data/v1/epss?cve=';
     let ALL_DATA_CACHE = {}; 
     let chartInstances = {}; 
     const ROOT_CSS_VARIABLES = {};
@@ -712,19 +741,28 @@
     };
 
     const SPECIAL_COMPONENTS = {
-        timelineChart: { label: 'Línea de Tiempo de Amenazas', defaultTitle: 'Línea de Tiempo de Amenazas', isDeletable: false },
-        dashboardAllAlerts: { label: 'Lista de Últimas Alertas', defaultTitle: 'Últimas Alertas Registradas', isDeletable: true }
+        timelineChart: { label: 'Línea de Tiempo de Amenazas', defaultTitle: 'Línea de Tiempo de Amenazas' },
+        dashboardAllAlerts: { label: 'Lista de Últimas Alertas', defaultTitle: 'Últimas Alertas Registradas' },
+        cveEpssDashboard: { label: 'Priorización de CVEs (EPSS)', defaultTitle: 'Análisis de Vulnerabilidades (CVEs)' },
+        exploitEpssDashboard: { label: 'Priorización de Exploits (EPSS)', defaultTitle: 'Análisis de Riesgo de Exploits' }
+    };
+    
+    const SPECIAL_CHARTS_AND_TABLES = {
+        exploitsByCve: { label: 'Top CVEs por Nº de Exploits', type: 'chart', defaultTitle: 'CVEs con más Exploits Públicos' },
+        vulnerablePlatforms: { label: 'Plataformas/Aplicativos más Vulnerables', type: 'chart', defaultTitle: 'Tecnologías con más Vulnerabilidades' },
+        exploitsWithSeverity: { label: 'Tabla de Exploits con Severidad (CVSS)', type: 'table', defaultTitle: 'Exploits Priorizados por Severidad de CVE' }
     };
     
     const DEFAULT_LAYOUT = [
-        { id: 'timeline-1', type: 'special', component: 'timelineChart', title: 'Línea de Tiempo de Amenazas', size: 'col-12', isDeletable: false },
-        { id: 'alerts-list-1', type: 'special', component: 'dashboardAllAlerts', title: 'Últimas Alertas Registradas', size: 'col-6', isDeletable: true },
-        { id: 'alerts-severity-1', type: 'chart', chartType: 'bar', source: 'alertas', groupBy: 'criticidad', title: 'Alertas por Criticidad', size: 'col-6', isDeletable: true },
-        { id: 'incidents-type-1', type: 'chart', chartType: 'doughnut', source: 'incidentes', groupBy: 'tipo', title: 'Incidentes por Tipo', size: 'col-4', isDeletable: true },
-        { id: 'incidents-sector-1', type: 'chart', chartType: 'pie', source: 'incidentes', groupBy: 'sector', title: 'Incidentes por Sector', size: 'col-4', isDeletable: true },
-        { id: 'cve-status-1', type: 'chart', chartType: 'doughnut', source: 'cves', groupBy: 'estado', title: 'CVEs por Estado', size: 'col-4', isDeletable: true },
-        { id: 'incidents-table-1', type: 'table', source: 'incidentes', title: 'Incidentes Recientes', size: 'col-12', isDeletable: true },
-        { id: 'cve-table-1', type: 'table', source: 'cves', title: 'CVEs Recientes', size: 'col-12', isDeletable: true }
+        { id: 'timeline-1', type: 'special', component: 'timelineChart', title: 'Línea de Tiempo de Amenazas', size: 'col-12' },
+        { id: 'cve-epss-1', type: 'special', component: 'cveEpssDashboard', title: 'Análisis de Vulnerabilidades (CVEs)', size: 'col-12'},
+        { id: 'exploit-epss-1', type: 'special', component: 'exploitEpssDashboard', title: 'Análisis de Riesgo de Exploits', size: 'col-12'},
+        { id: 'alerts-list-1', type: 'special', component: 'dashboardAllAlerts', title: 'Últimas Alertas Registradas', size: 'col-6' },
+        { id: 'alerts-severity-1', type: 'chart', chartType: 'bar', source: 'alertas', groupBy: 'criticidad', title: 'Alertas por Criticidad', size: 'col-6' },
+        { id: 'incidents-sector-1', type: 'chart', chartType: 'pie', source: 'incidentes', groupBy: 'sector', title: 'Incidentes por Sector', size: 'col-4' },
+        { id: 'incidents-country-1', type: 'chart', chartType: 'pie', source: 'incidentes', groupBy: 'pais', title: 'Incidentes por País', size: 'col-4' },
+        { id: 'cve-status-1', type: 'chart', chartType: 'doughnut', source: 'cves', groupBy: 'estado', title: 'CVEs por Estado', size: 'col-4' },
+        { id: 'incidents-table-1', type: 'table', source: 'incidentes', title: 'Incidentes Recientes', size: 'col-12' },
     ];
 
     function loadLayout() {
@@ -757,11 +795,6 @@
         renderDynamicDashboard();
     }
 
-    function addWidget(widgetConfig) {
-        dashboardState.layoutConfig.push(widgetConfig);
-        renderDynamicDashboard();
-    }
-
     function deleteWidget(widgetId) {
         if (confirm('¿Está seguro de que desea eliminar este elemento del dashboard?')) {
             dashboardState.layoutConfig = dashboardState.layoutConfig.filter(w => w.id !== widgetId);
@@ -785,176 +818,164 @@
     }
     
     // =============================================================================
-// LÓGICA DE CONEXIÓN CON API Y GESTIÓN DE DATOS (CRUD) - VERSIÓN CORREGIDA Y COMPLETA
-// =============================================================================
+    // LÓGICA DE CONEXIÓN CON API Y GESTIÓN DE DATOS (CRUD)
+    // =============================================================================
+    async function guardarDato(tipo, dato) {
+        const id = dato._id;
+        if (id) {
+            delete dato._id;
+        }
 
-async function guardarDato(tipo, dato) {
-    const id = dato._id;
-    if (id) {
-        delete dato._id;
+        const endpoint = tipo === 'zeroDays' ? 'zero-days' : tipo;
+        const url = id ? `${API_BASE_URL}/${endpoint}/${id}` : `${API_BASE_URL}/${endpoint}`;
+        const method = id ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(dato)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error ${response.status}`);
+            }
+            
+            await fetchAndCacheAllData();
+            await mostrarDatos(tipo);
+
+            if (document.getElementById('dashboard').classList.contains('active')) {
+               await renderDynamicDashboard();
+            }
+
+        } catch (error) {
+            console.error(`Error al guardar en '${tipo}':`, error);
+            alert(`No se pudo guardar el registro: ${error.message}`);
+            throw error;
+        }
     }
 
-    const endpoint = tipo === 'zeroDays' ? 'zero-days' : tipo;
-    const url = id ? `${API_BASE_URL}/${endpoint}/${id}` : `${API_BASE_URL}/${endpoint}`;
-    const method = id ? 'PUT' : 'POST';
+    async function eliminarRegistro(endpoint, id) {
+        if (!confirm('¿Estás seguro de que quieres eliminar este registro?')) return;
+        
+        const uiType = endpoint.includes('-') ? endpoint.split('-').map((word, index) => index > 0 ? capitalFirstLetter(word) : word).join('') : endpoint;
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
+                method: 'DELETE'
+            });
 
-    try {
-        const response = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dato)
+            if (!response.ok && response.status !== 204) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || `Error ${response.status}`);
+            }
+            
+            await fetchAndCacheAllData();
+            await mostrarDatos(uiType);
+
+            if (document.getElementById('dashboard').classList.contains('active')) {
+               await renderDynamicDashboard();
+            }
+            console.log(`Registro ${id} de ${endpoint} eliminado con éxito.`);
+
+        } catch (error) {
+            console.error(`Error al eliminar en ${endpoint}:`, error);
+            alert(`No se pudo eliminar el registro: ${error.message}`);
+        }
+    }
+
+    async function mostrarDatos(tipo) {
+        const endpoint = tipo === 'zeroDays' ? 'zero-days' : tipo;
+        const tablaId = tipo === 'cves' ? 'tablaCVEs' : `tabla${capitalFirstLetter(tipo)}`;
+        
+        const tbody = document.querySelector(`#${tablaId} tbody`);
+        if (!tbody) {
+            console.error(`Error: No se encontró el cuerpo de la tabla con id: #${tablaId}`);
+            return;
+        }
+        
+        const datos = ALL_DATA_CACHE[endpoint] || [];
+        tbody.innerHTML = ''; // Limpiar la tabla
+
+        const formatDisplayDate = (isoDate) => isoDate ? new Date(isoDate).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : 'N/A';
+
+        if (datos.length === 0) {
+            const row = tbody.insertRow();
+            const cell = row.insertCell();
+            const colCount = document.querySelector(`#${tablaId} thead th`)?.length || 7;
+            cell.colSpan = colCount;
+            cell.textContent = 'No hay registros para mostrar.';
+            cell.style.textAlign = 'center';
+            return;
+        }
+        
+        datos.forEach((dato) => {
+            const row = document.createElement('tr');
+            let cells = '';
+            
+            const refLink = dato.url ? ` <a href="${dato.url}" target="_blank" rel="noopener noreferrer" title="${dato.url}"><i class="fa-solid fa-link fa-xs"></i></a>` : '';
+
+            switch (tipo) {
+                case 'incidentes':
+                    cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.entidad || ''}${refLink}</td><td><span class="badge badge-country">${dato.pais || 'N/A'}</span></td><td><span class="badge badge-sector">${dato.sector || 'N/A'}</span></td><td>${dato.tipo || ''}</td><td>${dato.actor || 'Desconocido'}</td>`;
+                    break;
+                case 'exploits':
+                    cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.nombre || ''}${refLink}</td><td>${dato.tipo || ''}</td><td>${dato.plataforma || ''}</td><td>${dato.cve || 'N/A'}</td>`;
+                    break;
+                case 'zeroDays':
+                    cells = `<td>${dato.idZD || 'N/A'}</td><td>${dato.nombre || ''}${refLink}</td><td>${dato.plataforma || ''}</td><td>${formatDisplayDate(dato.fecha)}</td><td><span class="badge ${getSeverityClass(dato.cvss)}">${getSeverityText(dato.cvss)} (${dato.cvss || 'N/A'})</span></td><td><span class="badge ${getBadgeClassForZeroDayEstado(dato.estado)}">${dato.estado || ''}</span></td>`;
+                    break;
+                case 'cves':
+                    cells = `<td>${dato.cveId || ''}${refLink}</td><td>${dato.aplicativo || ''}</td><td>${formatDisplayDate(dato.fecha)}</td><td><span class="badge ${getSeverityClass(dato.cvss)}">${getSeverityText(dato.cvss)} (${dato.cvss || 'N/A'})</span></td><td>${dato.estado || ''}</td>`;
+                    break;
+                case 'alertas':
+                    cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.titulo || ''}${refLink}</td><td><span class="badge ${getSeverityClass(dato.criticidad, true)}">${dato.criticidad || ''}</span></td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
+                    break;
+                case 'fuentes':
+                    cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.nombre || ''}</td><td>${dato.tipo || ''}</td><td>${dato.url ? `<a href="${dato.url}" target="_blank" rel="noopener noreferrer" title="${dato.url}">Link <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i></a>` : 'N/A'}</td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
+                    break;
+                case 'mitigaciones':
+                    cells = `<td>${dato.titulo || ''}${refLink}</td><td>${dato.categoria || ''}</td><td><span class="badge ${getSeverityClass(dato.prioridad, true)}">${dato.prioridad || ''}</span></td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
+                    break;
+            }
+            
+            const editButtonHTML = `<button class="btn btn-edit" onclick="handleEditClick('${tipo}', '${dato._id}')"><i class="fa-solid fa-pencil"></i></button>`;
+            const deleteButtonHTML = `<button class="btn btn-danger" onclick="eliminarRegistro('${endpoint}', '${dato._id}')"><i class="fa-solid fa-trash"></i></button>`;
+
+            row.innerHTML = `${cells}<td class="actions-cell">${editButtonHTML}${deleteButtonHTML}</td>`;
+            tbody.appendChild(row);
         });
+    }
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `Error ${response.status}`);
-        }
-        
-        // 1. Refrescar toda la caché de datos
-        await fetchAndCacheAllData();
-        
-        // 2. Redibujar la tabla de la pestaña actual
-        await mostrarDatos(tipo);
+    function handleEditClick(type, id) {
+        const endpoint = type === 'zeroDays' ? 'zero-days' : type;
+        const item = ALL_DATA_CACHE[endpoint]?.find(d => d._id === id);
 
-        // 3. Si el dashboard está activo, redibujarlo también
-        if (document.getElementById('dashboard').classList.contains('active')) {
-           await renderDashboard(); // Asegúrate de que esta función se llame renderDashboard si la cambiaste
+        if (!item) {
+            console.error(`Item with ID ${id} not found for type ${type}`);
+            alert("No se pudo encontrar el registro para editar.");
+            return;
         }
 
-    } catch (error) {
-        console.error(`Error al guardar en '${tipo}':`, error);
-        alert(`No se pudo guardar el registro: ${error.message}`);
-        throw error;
-    }
-}
+        const editFunctions = {
+            incidentes: populateIncidenteFormForEdit,
+            exploits: populateExploitFormForEdit,
+            zeroDays: populateZeroDayFormForEdit,
+            cves: populateCveFormForEdit,
+            alertas: populateAlertaFormForEdit,
+            fuentes: populateFuenteFormForEdit,
+            mitigaciones: populateMitigacionFormForEdit
+        };
 
-async function eliminarRegistro(endpoint, id) {
-    if (!confirm('¿Estás seguro de que quieres eliminar este registro?')) return;
-    
-    // Convertir el endpoint de la API al tipo usado en la UI (ej. 'zero-days' -> 'zeroDays')
-    const uiType = endpoint.includes('-') ? endpoint.split('-').map((word, index) => index > 0 ? capitalFirstLetter(word) : word).join('') : endpoint;
-    
-    try {
-        const response = await fetch(`${API_BASE_URL}/${endpoint}/${id}`, {
-            method: 'DELETE'
-        });
-
-        if (!response.ok && response.status !== 204) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `Error ${response.status}`);
+        if (editFunctions[type]) {
+            editFunctions[type](item);
         }
-        
-        await fetchAndCacheAllData();
-        await mostrarDatos(uiType);
-
-        if (document.getElementById('dashboard').classList.contains('active')) {
-           await renderDashboard();
-        }
-        console.log(`Registro ${id} de ${endpoint} eliminado con éxito.`);
-
-    } catch (error) {
-        console.error(`Error al eliminar en ${endpoint}:`, error);
-        alert(`No se pudo eliminar el registro: ${error.message}`);
-    }
-}
-
-
-/**
- * FUNCIÓN CLAVE FALTANTE: Dibuja el contenido de las tablas de datos.
- */
-async function mostrarDatos(tipo) {
-    // Convierte el tipo de la UI (ej. 'zeroDays') al endpoint de la API (ej. 'zero-days')
-    const endpoint = tipo === 'zeroDays' ? 'zero-days' : tipo;
-    const tablaId = tipo === 'cves' ? 'tablaCVEs' : `tabla${capitalFirstLetter(tipo)}`;
-    
-    const tbody = document.querySelector(`#${tablaId} tbody`);
-    if (!tbody) {
-        console.error(`Error: No se encontró el cuerpo de la tabla con id: #${tablaId}`);
-        return;
     }
     
-    const datos = ALL_DATA_CACHE[endpoint] || [];
-    tbody.innerHTML = ''; // Limpiar la tabla
-
-    const formatDisplayDate = (isoDate) => isoDate ? new Date(isoDate).toLocaleDateString('es-ES', { timeZone: 'UTC' }) : 'N/A';
-
-    if (datos.length === 0) {
-        const row = tbody.insertRow();
-        const cell = row.insertCell();
-        const colCount = document.querySelector(`#${tablaId} thead th`).length;
-        cell.colSpan = colCount > 0 ? colCount : 7; // Default a 7 si falla
-        cell.textContent = 'No hay registros para mostrar.';
-        cell.style.textAlign = 'center';
-        return;
-    }
-    
-    datos.forEach((dato) => {
-        const row = document.createElement('tr');
-        let cells = '';
-        
-        const refLink = dato.url ? ` <a href="${dato.url}" target="_blank" rel="noopener noreferrer" title="${dato.url}"><i class="fa-solid fa-link fa-xs"></i></a>` : '';
-
-        // Construcción de celdas según el tipo de dato
-        switch (tipo) {
-            case 'incidentes':
-                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.entidad || ''}${refLink}</td><td><span class="badge badge-country">${dato.pais || 'N/A'}</span></td><td><span class="badge badge-sector">${dato.sector || 'N/A'}</span></td><td>${dato.tipo || ''}</td><td>${dato.actor || 'Desconocido'}</td>`;
-                break;
-            case 'exploits':
-                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.nombre || ''}${refLink}</td><td>${dato.tipo || ''}</td><td>${dato.plataforma || ''}</td><td>${dato.cve || 'N/A'}</td>`;
-                break;
-            case 'zeroDays':
-                cells = `<td>${dato.idZD || 'N/A'}</td><td>${dato.nombre || ''}${refLink}</td><td>${dato.plataforma || ''}</td><td>${formatDisplayDate(dato.fecha)}</td><td><span class="badge ${getSeverityClass(dato.cvss)}">${getSeverityText(dato.cvss)} (${dato.cvss || 'N/A'})</span></td><td><span class="badge ${getBadgeClassForZeroDayEstado(dato.estado)}">${dato.estado || ''}</span></td>`;
-                break;
-            case 'cves':
-                cells = `<td>${dato.cveId || ''}${refLink}</td><td>${dato.aplicativo || ''}</td><td>${formatDisplayDate(dato.fecha)}</td><td><span class="badge ${getSeverityClass(dato.cvss)}">${getSeverityText(dato.cvss)} (${dato.cvss || 'N/A'})</span></td><td>${dato.estado || ''}</td>`;
-                break;
-            case 'alertas':
-                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.titulo || ''}${refLink}</td><td><span class="badge ${getSeverityClass(dato.criticidad, true)}">${dato.criticidad || ''}</span></td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
-                break;
-            case 'fuentes':
-                cells = `<td>${formatDisplayDate(dato.fecha)}</td><td>${dato.nombre || ''}</td><td>${dato.tipo || ''}</td><td>${dato.url ? `<a href="${dato.url}" target="_blank" rel="noopener noreferrer" title="${dato.url}">Link <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i></a>` : 'N/A'}</td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
-                break;
-            case 'mitigaciones':
-                cells = `<td>${dato.titulo || ''}${refLink}</td><td>${dato.categoria || ''}</td><td><span class="badge ${getSeverityClass(dato.prioridad, true)}">${dato.prioridad || ''}</span></td><td>${(dato.descripcion || '').substring(0,50)}...</td>`;
-                break;
-        }
-        
-        // Botones de acciones
-        const editButtonHTML = `<button class="btn btn-edit" onclick="handleEditClick('${tipo}', '${dato._id}')"><i class="fa-solid fa-pencil"></i></button>`;
-        const deleteButtonHTML = `<button class="btn btn-danger" onclick="eliminarRegistro('${endpoint}', '${dato._id}')"><i class="fa-solid fa-trash"></i></button>`;
-
-        row.innerHTML = `${cells}<td class="actions-cell">${editButtonHTML}${deleteButtonHTML}</td>`;
-        tbody.appendChild(row);
-    });
-}
-
-/**
- * FUNCIÓN CLAVE FALTANTE: Maneja el clic en el botón de editar.
- */
-function handleEditClick(type, id) {
-    const endpoint = type === 'zeroDays' ? 'zero-days' : type;
-    const item = ALL_DATA_CACHE[endpoint]?.find(d => d._id === id);
-
-    if (!item) {
-        console.error(`Item with ID ${id} not found for type ${type}`);
-        alert("No se pudo encontrar el registro para editar.");
-        return;
-    }
-
-    const editFunctions = {
-        incidentes: populateIncidenteFormForEdit,
-        exploits: populateExploitFormForEdit,
-        zeroDays: populateZeroDayFormForEdit,
-        cves: populateCveFormForEdit,
-        alertas: populateAlertaFormForEdit,
-        fuentes: populateFuenteFormForEdit,
-        mitigaciones: populateMitigacionFormForEdit
-    };
-
-    if (editFunctions[type]) {
-        editFunctions[type](item);
-    }
-}
+    // =============================================================================
+    // INICIALIZACIÓN Y LÓGICA DE UI GENERAL
+    // =============================================================================
     function parseCssVariables() {
         const styleSheets = Array.from(document.styleSheets).filter(sheet => { try { return sheet.cssRules; } catch (e) { return false; } });
         for (const sheet of styleSheets) { for (const rule of Array.from(sheet.cssRules)) { if (rule.style && rule.selectorText === ':root') { for (let i = 0; i < rule.style.length; i++) { const name = rule.style[i]; if (name.startsWith('--')) { const value = rule.style.getPropertyValue(name).trim(); if (value.startsWith('#')) {  const hex = value.substring(1); const bigint = parseInt(hex, 16); ROOT_CSS_VARIABLES[name] = { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255, hex: value }; } else { ROOT_CSS_VARIABLES[name] = value; } } } return; } } }
@@ -970,7 +991,7 @@ function handleEditClick(type, id) {
              const formPrefix = formIdToReset.replace('Form', '');
              const capitalPrefix = capitalFirstLetter(formPrefix.replace('-',''));
              const cancelBtnId = `cancel${capitalPrefix}EditBtn`;
-             if(document.getElementById(cancelBtnId) && document.getElementById(cancelBtnId).style.display !== 'none'){
+             if(document.getElementById(cancelBtnId)?.style.display !== 'none'){
                  document.getElementById(cancelBtnId).click();
              }
         } else { container.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
@@ -981,8 +1002,7 @@ function handleEditClick(type, id) {
         document.getElementById(tabName).classList.add('active');
         
         document.querySelectorAll('#appNavigation .nav-link').forEach(link => link.classList.remove('active'));
-        const navLink = document.querySelector(`#appNavigation .nav-link[data-tab-name="${tabName}"]`);
-        if (navLink) navLink.classList.add('active');
+        document.querySelector(`#appNavigation .nav-link[data-tab-name="${tabName}"]`)?.classList.add('active');
 
         document.getElementById('navMenuContainer').classList.remove('open');
         
@@ -997,7 +1017,7 @@ function handleEditClick(type, id) {
 
     function navigateToTab(tabName) { openTab(tabName); window.scrollTo({ top: 0, behavior: 'smooth' }); }
 
-    async function fetchAndCacheAllData(forceDashboardRender = false) {
+    async function fetchAndCacheAllData() {
         console.log("Attempting to fetch data from API...");
         const dataKeys = ['incidentes', 'exploits', 'zero-days', 'cves', 'alertas', 'fuentes', 'mitigaciones'];
         try {
@@ -1007,17 +1027,13 @@ function handleEditClick(type, id) {
             }));
             const results = await Promise.all(promises);
             dataKeys.forEach((key, index) => { ALL_DATA_CACHE[key] = results[index]; });
-            console.log("Data cache updated successfully from server.", ALL_DATA_CACHE);
+            console.log("Data cache updated successfully.");
         } catch (error) {
             console.error("Fatal error fetching data:", error);
             alert(`Hubo un problema crítico al cargar los datos. Verifique que el servidor backend (server.js) esté en ejecución y que la URL ${API_BASE_URL} sea correcta. Error: ${error.message}`);
         }
         
         updateGlobalStats();
-
-        if (forceDashboardRender || document.getElementById('dashboard').classList.contains('active')) {
-            await renderDynamicDashboard();
-        }
     }
     
     function updateGlobalStats() {
@@ -1034,14 +1050,14 @@ function handleEditClick(type, id) {
         console.log("DOM fully loaded and parsed. Initializing application.");
         parseCssVariables();
         loadLayout();
-        setupModal();
+        setupWidgetModal();
 
         await fetchAndCacheAllData();
 
         document.querySelectorAll('#appNavigation .nav-link').forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); openTab(e.currentTarget.dataset.tabName); }); });
         window.onclick = (event) => { if (!event.target.matches('.menu-toggle-btn') && !event.target.closest('.dropdown-menu')) { document.getElementById('navMenuContainer').classList.remove('open'); } }
 
-        document.getElementById('applyDashboardFilterBtn').addEventListener('click', () => renderDynamicDashboard());
+        document.getElementById('applyDashboardFilterBtn').addEventListener('click', renderDynamicDashboard);
         document.getElementById('resetDashboardFilterBtn').addEventListener('click', () => {
             document.getElementById('dashboardStartDate').value = '';
             document.getElementById('dashboardEndDate').value = '';
@@ -1050,11 +1066,16 @@ function handleEditClick(type, id) {
         
         document.getElementById('toggleEditModeBtn').addEventListener('click', toggleEditMode);
 
-        // Event delegation for widget controls
         document.getElementById('dashboardGrid').addEventListener('click', (e) => {
             const deleteBtn = e.target.closest('.delete-widget-btn');
             if (deleteBtn) {
                 deleteWidget(deleteBtn.dataset.widgetId);
+                return;
+            }
+
+            const editBtn = e.target.closest('.edit-widget-btn');
+            if (editBtn) {
+                openEditWidgetModal(editBtn.dataset.widgetId);
                 return;
             }
 
@@ -1115,9 +1136,9 @@ function handleEditClick(type, id) {
     function buscarAlertas() { searchTable('searchAlertas', 'tablaAlertas', [0, 1, 3]); } 
     function buscarFuentes() { searchTable('searchFuentes', 'tablaFuentes', [0, 1, 2, 4]); }
     function buscarMitigaciones() { searchTable('searchMitigaciones', 'tablaMitigaciones', [0, 1, 3]); }
-
+    
     // =============================================================================
-    // DYNAMIC DASHBOARD & CHARTING FUNCTIONS
+    // DYNAMIC DASHBOARD & CHARTING FUNCTIONS (VERSIÓN CORREGIDA Y ROBUSTA)
     // =============================================================================
     function getFilteredData() {
         const startDateStr = document.getElementById('dashboardStartDate').value;
@@ -1132,7 +1153,7 @@ function handleEditClick(type, id) {
         
         const filterByDate = (item) => {
             if (!startDateStr || !endDateStr) return true;
-            if (!item.fecha) return true; // Include items without a date unless filtered
+            if (!item.fecha) return true; 
             const itemDate = new Date(item.fecha); 
             const startDate = new Date(startDateStr);
             const endDate = new Date(endDateStr);
@@ -1149,7 +1170,6 @@ function handleEditClick(type, id) {
 
     async function renderDynamicDashboard() {
         console.log("Rendering dynamic dashboard...");
-        const filteredData = getFilteredData();
         const grid = document.getElementById('dashboardGrid');
         grid.innerHTML = ''; 
 
@@ -1162,16 +1182,14 @@ function handleEditClick(type, id) {
             card.dataset.widgetId = widget.id;
 
             let headerControlsHTML = '';
-            const isChart = widget.type === 'chart' || (widget.type === 'special' && widget.component === 'timelineChart');
-            
-            if (isChart) {
-                headerControlsHTML += `<button class="download-chart-btn" data-chart-id="chart-${widget.id}" data-chart-title="${widget.title}"><i class="fa-solid fa-camera"></i></button>`;
-            }
-
             if (dashboardState.isEditMode) {
-                if (widget.isDeletable !== false) {
-                    headerControlsHTML += `<button class="delete-widget-btn" data-widget-id="${widget.id}"><i class="fa-solid fa-trash"></i></button>`;
-                }
+                headerControlsHTML += `<button class="widget-control-btn edit edit-widget-btn" data-widget-id="${widget.id}" title="Editar Widget"><i class="fa-solid fa-pencil"></i></button>`;
+                headerControlsHTML += `<button class="widget-control-btn delete delete-widget-btn" data-widget-id="${widget.id}" title="Eliminar Widget"><i class="fa-solid fa-trash"></i></button>`;
+            }
+            
+            const isChart = widget.type === 'chart' || (widget.type === 'special' && (widget.component === 'timelineChart' || widget.component.includes('Epss')));
+            if (isChart) {
+                headerControlsHTML = `<button class="widget-control-btn download-chart-btn" data-chart-id="chart-${widget.id}" data-chart-title="${widget.title}" title="Descargar como PNG"><i class="fa-solid fa-camera"></i></button>` + headerControlsHTML;
             }
 
             card.innerHTML = `
@@ -1186,17 +1204,34 @@ function handleEditClick(type, id) {
             const cardBody = document.getElementById(`body-${widget.id}`);
             
             if (widget.type === 'chart') {
-                renderChartWidget(widget, cardBody, filteredData);
+                if (widget.source.startsWith('corr_')) {
+                    const chartType = widget.source.substring(5); // ej: "exploitsByCve"
+                    if (chartType === 'exploitsByCve') {
+                        renderExploitsByCveChart(widget, cardBody);
+                    } else if (chartType === 'vulnerablePlatforms') {
+                        renderVulnerablePlatformsChart(widget, cardBody);
+                    }
+                } else {
+                    renderChartWidget(widget, cardBody);
+                }
             } else if (widget.type === 'table') {
-                renderTableWidget(widget, cardBody, filteredData);
+                if (widget.source.startsWith('corr_')) {
+                    const tableType = widget.source.substring(5);
+                    if (tableType === 'exploitsWithSeverity') {
+                        renderExploitsWithSeverityTable(widget, cardBody);
+                    }
+                } else {
+                    renderTableWidget(widget, cardBody);
+                }
             } else if (widget.type === 'special') {
-                renderSpecialWidget(widget, cardBody, filteredData);
+                renderSpecialWidget(widget, cardBody);
             }
         }
         console.log("Dashboard rendered.");
     }
 
-    function renderChartWidget(widget, container, filteredData) {
+    function renderChartWidget(widget, container) {
+        const filteredData = getFilteredData();
         const canvasId = `chart-${widget.id}`;
         container.innerHTML = `<div class="chart-container"><canvas id="${canvasId}"></canvas></div>`;
 
@@ -1210,109 +1245,73 @@ function handleEditClick(type, id) {
         const labels = Object.keys(data);
         const values = Object.values(data);
         
-        const chartColors = [
-            ROOT_CSS_VARIABLES['--secondary']?.hex, ROOT_CSS_VARIABLES['--success']?.hex, ROOT_CSS_VARIABLES['--warning']?.hex,
-            ROOT_CSS_VARIABLES['--danger']?.hex, ROOT_CSS_VARIABLES['--info']?.hex, ROOT_CSS_VARIABLES['--primary']?.hex, '#7f8c8d', '#34495e'
-        ];
+        const chartColors = ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#34495e', '#1abc9c', '#e67e22'];
 
         let config = {
             type: widget.chartType,
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: `Nº de ${widget.source}`,
-                    data: values,
-                    backgroundColor: chartColors,
-                    borderColor: '#fff',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: (widget.chartType === 'bar' || widget.chartType === 'radar') ? 'top' : 'bottom',
-                    }
-                }
-            }
+            data: { labels, datasets: [{ label: `Nº de ${widget.source}`, data: values, backgroundColor: chartColors, borderColor: '#fff', borderWidth: 1 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: (widget.chartType === 'bar' || widget.chartType === 'radar') ? 'top' : 'bottom' } } }
         };
-
         if (widget.chartType === 'bar') {
             config.options.scales = { y: { beginAtZero: true, ticks: { precision: 0 } } };
             config.options.plugins.legend.display = false;
         }
-
         if (widget.chartType === 'radar') {
             config.options.scales = { r: { angleLines: { display: true }, suggestedMin: 0, ticks: { precision: 0 } } };
         }
-        
         createOrUpdateChart(canvasId, config);
     }
 
-    function renderTableWidget(widget, container, filteredData) {
+    function renderTableWidget(widget, container) {
+        const filteredData = getFilteredData();
         container.innerHTML = `<div class="table-container"><table id="table-${widget.id}"><thead></thead><tbody></tbody></table></div>`;
         const table = document.getElementById(`table-${widget.id}`);
-        const thead = table.querySelector('thead');
-        const tbody = table.querySelector('tbody');
-        
         const data = (filteredData[widget.source] || []).sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).slice(0, 5);
-        if(data.length === 0) {
-            container.innerHTML = `<p>No hay datos para el período seleccionado.</p>`;
-            return;
-        }
+        if(data.length === 0) { container.innerHTML = `<p>No hay datos para el período seleccionado.</p>`; return; }
 
         let headers = '';
+        let bodyHTML = '';
         switch(widget.source) {
             case 'incidentes':
-                headers = `<tr><th>Fecha</th><th>Entidad</th><th>Sector</th><th>Tipo</th></tr>`;
-                data.forEach(item => {
-                    const row = tbody.insertRow();
-                    row.innerHTML = `<td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.entidad}</td><td>${item.sector || 'N/A'}</td><td>${item.tipo}</td>`;
-                });
+                headers = `<tr><th>Fecha</th><th>Entidad</th><th>País</th><th>Sector</th><th>Tipo</th></tr>`;
+                bodyHTML = data.map(item => `<tr><td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.entidad}</td><td>${item.pais || 'N/A'}</td><td>${item.sector || 'N/A'}</td><td>${item.tipo}</td></tr>`).join('');
                 break;
             case 'cves':
                 headers = `<tr><th>ID</th><th>Aplicativo</th><th>Severidad</th><th>CVSS</th></tr>`;
-                data.forEach(item => {
-                    const row = tbody.insertRow();
-                    row.innerHTML = `<td>${item.cveId}</td><td>${item.aplicativo}</td><td><span class="badge ${getSeverityClass(item.cvss)}">${getSeverityText(item.cvss)}</span></td><td>${item.cvss}</td>`;
-                });
+                bodyHTML = data.map(item => `<tr><td>${item.cveId}</td><td>${item.aplicativo}</td><td><span class="badge ${getSeverityClass(item.cvss)}">${getSeverityText(item.cvss)}</span></td><td>${item.cvss}</td></tr>`).join('');
                 break;
             case 'exploits':
                 headers = `<tr><th>Fecha</th><th>Nombre</th><th>Tipo</th><th>Plataforma</th></tr>`;
-                data.forEach(item => {
-                    const row = tbody.insertRow();
-                    row.innerHTML = `<td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.nombre}</td><td>${item.tipo}</td><td>${item.plataforma}</td>`;
-                });
+                bodyHTML = data.map(item => `<tr><td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.nombre}</td><td>${item.tipo}</td><td>${item.plataforma}</td></tr>`).join('');
                 break;
             case 'zero-days':
-                headers = `<tr><th>ID</th><th>Nombre</th><th>Fecha</th><th>Estado</th></tr>`;
-                data.forEach(item => {
-                    const row = tbody.insertRow();
-                    row.innerHTML = `<td>${item.idZD || 'N/A'}</td><td>${item.nombre}</td><td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.estado}</td>`;
-                });
+                headers = `<tr><th>ID</th><th>Nombre</th><th>Fecha</th><th>Estado</th><th>CVSS</th></tr>`;
+                bodyHTML = data.map(item => `<tr><td>${item.idZD || 'N/A'}</td><td>${item.nombre}</td><td>${new Date(item.fecha).toLocaleDateString('es-ES',{timeZone:'UTC'})}</td><td>${item.estado}</td><td>${item.cvss}</td></tr>`).join('');
                 break;
         }
-        thead.innerHTML = headers;
+        table.querySelector('thead').innerHTML = headers;
+        table.querySelector('tbody').innerHTML = bodyHTML;
     }
 
-    function renderSpecialWidget(widget, container, filteredData) {
-         const canvasId = `chart-${widget.id}`;
-         const { startDateStr, endDateStr } = { 
-            startDateStr: document.getElementById('dashboardStartDate').value,
-            endDateStr: document.getElementById('dashboardEndDate').value
-         };
-
-        if (widget.component === 'timelineChart') {
-            container.innerHTML = `<div class="chart-container" style="height: 350px;"><canvas id="${canvasId}"></canvas></div>`;
-            renderTimelineChart(canvasId, filteredData, startDateStr, endDateStr);
-        } else if (widget.component === 'dashboardAllAlerts') {
-            container.innerHTML = `<div class="dashboard-alerts-container" id="alerts-${widget.id}"></div>`;
-            renderDashboardAllAlerts(document.getElementById(`alerts-${widget.id}`), filteredData.alertas);
+    function renderSpecialWidget(widget, container) {
+        switch(widget.component) {
+            case 'timelineChart':
+                container.innerHTML = `<div class="chart-container" style="height: 350px;"><canvas id="chart-${widget.id}"></canvas></div>`;
+                renderTimelineChart(`chart-${widget.id}`);
+                break;
+            case 'dashboardAllAlerts':
+                container.innerHTML = `<div class="dashboard-alerts-container" id="alerts-${widget.id}"></div>`;
+                renderDashboardAllAlerts(document.getElementById(`alerts-${widget.id}`));
+                break;
+            case 'cveEpssDashboard':
+                renderCveEpssWidget(container, widget);
+                break;
+            case 'exploitEpssDashboard':
+                renderExploitEpssWidget(container, widget);
+                break;
         }
     }
-
-
+    
     function createOrUpdateChart(chartId, chartConfig) {
         const ctx = document.getElementById(chartId)?.getContext('2d');
         if(!ctx) { console.warn(`Canvas with ID ${chartId} not found.`); return; }
@@ -1370,26 +1369,23 @@ function handleEditClick(type, id) {
             default: return 'ℹ️'; 
         }
     }
-    /**
- * FUNCIÓN FALTANTE: Devuelve la clase CSS correcta para el estado de un Zero Day.
- */
-function getBadgeClassForZeroDayEstado(estado) {
-    switch (String(estado)?.toLowerCase()) {
-        case 'activo':
-            return 'badge-estado-activo';
-        case 'mitigado':
-            return 'badge-estado-mitigado';
-        case 'en investigación':
-        case 'investigacion':
-            return 'badge-estado-investigacion';
-        case 'prueba de concepto':
-        case 'pruebadeconcepto':
-            return 'badge-estado-poc';
-        default:
-            return 'badge-info'; // Un color por defecto para estados no definidos
+
+    function getBadgeClassForZeroDayEstado(estado) {
+        switch (String(estado)?.toLowerCase()) {
+            case 'activo': return 'badge-estado-activo';
+            case 'mitigado': return 'badge-estado-mitigado';
+            case 'en investigación': case 'investigacion': return 'badge-estado-investigacion';
+            case 'prueba de concepto': case 'pruebadeconcepto': return 'badge-estado-poc';
+            default: return 'badge-info';
+        }
     }
-}
-    function renderDashboardAllAlerts(container, alertas) {
+
+    // =============================================================================
+    // WIDGETS ESPECIALES (INCLUYE EPSS Y NUEVOS GRÁFICOS)
+    // =============================================================================
+
+    function renderDashboardAllAlerts(container) {
+        const alertas = getFilteredData().alertas;
         container.innerHTML = ''; 
         if (!alertas || alertas.length === 0) {
             container.innerHTML = '<p>No hay alertas para el período seleccionado.</p>';
@@ -1404,8 +1400,14 @@ function getBadgeClassForZeroDayEstado(estado) {
         });
     }
 
-    function renderTimelineChart(canvasId, filteredData, startDateStr, endDateStr) {
+    function renderTimelineChart(canvasId) {
+        const filteredData = getFilteredData();
         const { incidentes, exploits, 'zero-days': zeroDays, cves } = filteredData;
+        const { startDateStr, endDateStr } = { 
+            startDateStr: document.getElementById('dashboardStartDate').value,
+            endDateStr: document.getElementById('dashboardEndDate').value
+         };
+
         const dataPoints = {};
         let labels = [];
 
@@ -1429,7 +1431,7 @@ function getBadgeClassForZeroDayEstado(estado) {
             }
         }
         
-        const processItems = (items, typeKey) => { if (Array.isArray(items)) { items.forEach(item => { if (item && item.fecha) { const dateString = new Date(item.fecha).toISOString().split('T')[0]; if (dataPoints.hasOwnProperty(dateString)) { dataPoints[dateString][typeKey]++; } } }); } };
+        const processItems = (items, typeKey) => { if (Array.isArray(items)) { items.forEach(item => { if (item?.fecha) { const dateString = new Date(item.fecha).toISOString().split('T')[0]; if (dataPoints.hasOwnProperty(dateString)) { dataPoints[dateString][typeKey]++; } } }); } };
         processItems(incidentes, 'incidents');
         processItems(exploits, 'exploits');
         processItems(zeroDays, 'zeroDays');
@@ -1441,10 +1443,10 @@ function getBadgeClassForZeroDayEstado(estado) {
             data: {
                 labels: labels,
                 datasets: [
-                    { label: 'Incidentes', data: sortedDateStrings.map(d => dataPoints[d]?.incidents || 0), borderColor: ROOT_CSS_VARIABLES['--danger']?.hex, backgroundColor: (ROOT_CSS_VARIABLES['--danger']?.hex || '#e74c3c') + '1A', tension: 0.3, fill: true }, 
-                    { label: 'Exploits', data: sortedDateStrings.map(d => dataPoints[d]?.exploits || 0), borderColor: ROOT_CSS_VARIABLES['--secondary']?.hex, backgroundColor: (ROOT_CSS_VARIABLES['--secondary']?.hex || '#3498db') + '1A', tension: 0.3, fill: true }, 
-                    { label: 'ZeroDays', data: sortedDateStrings.map(d => dataPoints[d]?.zeroDays || 0), borderColor: ROOT_CSS_VARIABLES['--success']?.hex, backgroundColor: (ROOT_CSS_VARIABLES['--success']?.hex || '#2ecc71') + '1A', tension: 0.3, fill: true }, 
-                    { label: 'CVEs', data: sortedDateStrings.map(d => dataPoints[d]?.cves || 0), borderColor: ROOT_CSS_VARIABLES['--warning']?.hex, backgroundColor: (ROOT_CSS_VARIABLES['--warning']?.hex || '#f39c12') + '1A', tension: 0.3, fill: true }
+                    { label: 'Incidentes', data: sortedDateStrings.map(d => dataPoints[d]?.incidents || 0), borderColor: ROOT_CSS_VARIABLES['--danger']?.hex || '#e74c3c', backgroundColor: (ROOT_CSS_VARIABLES['--danger']?.hex || '#e74c3c') + '1A', tension: 0.3, fill: true }, 
+                    { label: 'Exploits', data: sortedDateStrings.map(d => dataPoints[d]?.exploits || 0), borderColor: ROOT_CSS_VARIABLES['--secondary']?.hex || '#3498db', backgroundColor: (ROOT_CSS_VARIABLES['--secondary']?.hex || '#3498db') + '1A', tension: 0.3, fill: true }, 
+                    { label: 'ZeroDays', data: sortedDateStrings.map(d => dataPoints[d]?.zeroDays || 0), borderColor: ROOT_CSS_VARIABLES['--success']?.hex || '#2ecc71', backgroundColor: (ROOT_CSS_VARIABLES['--success']?.hex || '#2ecc71') + '1A', tension: 0.3, fill: true }, 
+                    { label: 'CVEs', data: sortedDateStrings.map(d => dataPoints[d]?.cves || 0), borderColor: ROOT_CSS_VARIABLES['--warning']?.hex || '#f39c12', backgroundColor: (ROOT_CSS_VARIABLES['--warning']?.hex || '#f39c12') + '1A', tension: 0.3, fill: true }
                 ]
             },
             options: {
@@ -1456,23 +1458,246 @@ function getBadgeClassForZeroDayEstado(estado) {
         });
     }
 
-    // =============================================================================
-    // MODAL LOGIC
-    // =============================================================================
-    function setupModal() {
-        const modal = document.getElementById('addWidgetModal');
-        const btn = document.getElementById('addWidgetBtn');
-        const span = document.getElementsByClassName('close-modal')[0];
+    async function renderCveEpssWidget(container, widget) {
+        container.innerHTML = `<div class="epss-dashboard cve">
+            <div class="epss-loader" id="loader-${widget.id}">Cargando datos...</div>
+            <div id="stats-${widget.id}" style="display: none;"></div>
+            <div class="epss-content-grid" id="content-${widget.id}" style="display: none;">
+                <div class="chart-container"><canvas id="chart-${widget.id}"></canvas></div>
+                <div class="table-container"><h3>CVEs de Alta Prioridad</h3><div id="table-${widget.id}"></div></div>
+            </div>
+        </div>`;
+        const loader = document.getElementById(`loader-${widget.id}`);
+        try {
+            const cves = getFilteredData().cves || [];
+            if (!cves.length) { loader.innerHTML = 'No hay CVEs para analizar en el período seleccionado.'; return; }
+            
+            loader.textContent = `Enriqueciendo ${cves.length} CVEs con datos de EPSS...`;
+            const epssPromises = cves.map(cve => fetch(`${EPSS_API_URL}${cve.cveId}`).then(res => res.ok ? res.json() : null));
+            const epssResults = await Promise.all(epssPromises);
 
-        btn.onclick = () => { modal.style.display = 'block'; resetModalForm(); };
+            const enrichedData = cves.map((cve, i) => ({ ...cve, epssScore: (epssResults[i]?.data.length > 0) ? parseFloat(epssResults[i].data[0].epss) : 0 }));
+            
+            const highPriority = enrichedData.filter(c => c.epssScore > 0.5);
+            document.getElementById(`stats-${widget.id}`).innerHTML = `<div class="epss-stats-grid">
+                <div class="epss-stat-card"><div class="epss-stat-value">${enrichedData.length}</div><div class="epss-stat-label">CVEs Analizados</div></div>
+                <div class="epss-stat-card"><div class="epss-stat-value">${highPriority.length}</div><div class="epss-stat-label">Alta Prob. (>50%)</div></div>
+            </div>`;
+            
+            renderScatterChart(document.getElementById(`chart-${widget.id}`), enrichedData, 'cve');
+            renderPriorityTable(document.getElementById(`table-${widget.id}`), highPriority.sort((a,b) => b.epssScore - a.epssScore), ['cveId', 'epssScore', 'cvss']);
+            
+            loader.style.display = 'none';
+            document.getElementById(`stats-${widget.id}`).style.display = 'block';
+            document.getElementById(`content-${widget.id}`).style.display = 'grid';
+
+        } catch (error) { loader.innerHTML = `<strong>Error:</strong> ${error.message}.`; }
+    }
+    
+    async function renderExploitEpssWidget(container, widget) {
+         container.innerHTML = `<div class="epss-dashboard exploit">
+            <div class="epss-loader" id="loader-${widget.id}">Cargando datos...</div>
+            <div id="stats-${widget.id}" style="display: none;"></div>
+            <div class="epss-content-grid" id="content-${widget.id}" style="display: none;">
+                <div class="chart-container"><canvas id="chart-${widget.id}"></canvas></div>
+                <div class="table-container"><h3>Exploits de Alto Riesgo</h3><div id="table-${widget.id}"></div></div>
+            </div>
+        </div>`;
+        const loader = document.getElementById(`loader-${widget.id}`);
+        try {
+            const { exploits, cves } = getFilteredData();
+            const exploitsWithCVEs = (exploits || []).filter(e => e.cve && e.cve.trim() !== '');
+            if (!exploitsWithCVEs.length) { loader.innerHTML = 'No hay exploits con CVEs asociados en el período seleccionado.'; return; }
+
+            loader.textContent = `Analizando ${exploitsWithCVEs.length} exploits...`;
+            const cveMap = (cves || []).reduce((map, cve) => { map[cve.cveId] = cve; return map; }, {});
+            const epssPromises = exploitsWithCVEs.map(e => fetch(`${EPSS_API_URL}${e.cve}`).then(res => res.ok ? res.json() : null));
+            const epssResults = await Promise.all(epssPromises);
+            
+            const enrichedData = exploitsWithCVEs.map((e, i) => ({ ...e, cvss: cveMap[e.cve]?.cvss || 0, epssScore: (epssResults[i]?.data.length > 0) ? parseFloat(epssResults[i].data[0].epss) : 0 }));
+            
+            const highPriority = enrichedData.filter(e => e.epssScore > 0.5);
+            document.getElementById(`stats-${widget.id}`).innerHTML = `<div class="epss-stats-grid">
+                <div class="epss-stat-card"><div class="epss-stat-value">${enrichedData.length}</div><div class="epss-stat-label">Exploits Analizados</div></div>
+                <div class="epss-stat-card"><div class="epss-stat-value">${highPriority.length}</div><div class="epss-stat-label">Alto Riesgo (>50%)</div></div>
+            </div>`;
+
+            renderScatterChart(document.getElementById(`chart-${widget.id}`), enrichedData, 'exploit');
+            renderPriorityTable(document.getElementById(`table-${widget.id}`), highPriority.sort((a,b) => b.epssScore - a.epssScore), ['nombre', 'cve', 'epssScore']);
+
+            loader.style.display = 'none';
+            document.getElementById(`stats-${widget.id}`).style.display = 'block';
+            document.getElementById(`content-${widget.id}`).style.display = 'grid';
+
+        } catch (error) { loader.innerHTML = `<strong>Error:</strong> ${error.message}.`; }
+    }
+
+    function renderScatterChart(canvas, data, type) {
+        const options = {
+            cve: { color: 'var(--primary-cve)', tooltip: c => [c.raw.cveId, `CVSS: ${c.raw.x.toFixed(1)}`, `EPSS: ${(c.raw.y * 100).toFixed(2)}%`] },
+            exploit: { color: 'var(--primary-exploit)', tooltip: c => [c.raw.nombre, `CVE: ${c.raw.cve}`, `CVSS: ${c.raw.x > 0 ? c.raw.x.toFixed(1) : 'N/A'}`, `EPSS: ${(c.raw.y * 100).toFixed(2)}%`] }
+        };
+        const chartId = canvas.id;
+        if (chartInstances[chartId]) chartInstances[chartId].destroy();
+        chartInstances[chartId] = new Chart(canvas.getContext('2d'), {
+            type: 'scatter',
+            data: { datasets: [{
+                label: 'Items', data: data.map(d => ({...d, x: d.cvss, y: d.epssScore})),
+                backgroundColor: options[type].color + 'B3', pointRadius: 6, pointHoverRadius: 9
+            }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: { x: { title: { display: true, text: 'Severidad (CVSS)' }, min: 0, max: 10 }, y: { title: { display: true, text: 'Probabilidad (EPSS)' }, min: 0, max: 1, ticks: { callback: v => (v*100).toFixed(0)+'%' } } },
+                plugins: { legend: { display: false }, tooltip: { callbacks: { label: options[type].tooltip } } }
+            }
+        });
+    }
+
+    function renderPriorityTable(container, data, columns) {
+        if (!data.length) { container.innerHTML = '<p>No hay elementos de alta prioridad.</p>'; return; }
+        let tableHTML = '<table><thead><tr>' + columns.map(c => `<th>${c.charAt(0).toUpperCase() + c.slice(1)}</th>`).join('') + '</tr></thead><tbody>';
+        data.forEach(item => {
+            tableHTML += '<tr>' + columns.map(col => {
+                let val = item[col];
+                if (col === 'epssScore') val = `${(val * 100).toFixed(1)}%`;
+                else if (col === 'cvss') val = `<span class="badge ${getSeverityClass(item.cvss)}">${item.cvss > 0 ? item.cvss.toFixed(1) : 'N/A'}</span>`;
+                return `<td>${val || 'N/A'}</td>`;
+            }).join('') + '</tr>';
+        });
+        container.innerHTML = tableHTML + '</tbody></table>';
+    }
+
+    function renderExploitsByCveChart(widget, container) {
+        const filteredData = getFilteredData();
+        const canvasId = `chart-${widget.id}`;
+        container.innerHTML = `<div class="chart-container"><canvas id="${canvasId}"></canvas></div>`;
+        const exploits = filteredData.exploits || [];
+
+        const cveCounts = exploits.reduce((acc, exploit) => {
+            if (exploit.cve && exploit.cve.trim() !== '') {
+                acc[exploit.cve] = (acc[exploit.cve] || 0) + 1;
+            }
+            return acc;
+        }, {});
+
+        const sortedCVEs = Object.entries(cveCounts).sort((a, b) => b[1] - a[1]).slice(0, 10); // Top 10
+
+        const labels = sortedCVEs.map(entry => entry[0]);
+        const data = sortedCVEs.map(entry => entry[1]);
+
+        createOrUpdateChart(canvasId, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nº de Exploits Públicos',
+                    data: data,
+                    backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                    borderColor: 'rgba(192, 57, 43, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                indexAxis: 'y', // Gráfico de barras horizontales para mejor lectura de IDs de CVE
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+
+    function renderVulnerablePlatformsChart(widget, container) {
+        const filteredData = getFilteredData();
+        const canvasId = `chart-${widget.id}`;
+        container.innerHTML = `<div class="chart-container"><canvas id="${canvasId}"></canvas></div>`;
+
+        const platformCounts = {};
+        const countItem = (item, field) => {
+            if (item[field] && item[field].trim() !== '') {
+                const key = item[field].trim();
+                platformCounts[key] = (platformCounts[key] || 0) + 1;
+            }
+        };
+
+        (filteredData.cves || []).forEach(item => countItem(item, 'aplicativo'));
+        (filteredData.exploits || []).forEach(item => countItem(item, 'plataforma'));
+        (filteredData['zero-days'] || []).forEach(item => countItem(item, 'plataforma'));
+
+        const sortedPlatforms = Object.entries(platformCounts).sort((a, b) => b[1] - a[1]).slice(0, 10); // Top 10
+
+        const labels = sortedPlatforms.map(entry => entry[0]);
+        const data = sortedPlatforms.map(entry => entry[1]);
+
+        createOrUpdateChart(canvasId, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Nº de Vulnerabilidades/Exploits',
+                    data: data,
+                    backgroundColor: 'rgba(44, 62, 80, 0.7)',
+                    borderColor: 'rgba(52, 73, 94, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+
+    function renderExploitsWithSeverityTable(widget, container) {
+        const filteredData = getFilteredData();
+        container.innerHTML = `<div class="table-container"><table id="table-${widget.id}"><thead></thead><tbody></tbody></table></div>`;
+        const table = document.getElementById(`table-${widget.id}`);
+        const exploits = filteredData.exploits || [];
+        const cves = filteredData.cves || [];
+        
+        const cveCvssMap = cves.reduce((map, cve) => {
+            map[cve.cveId] = cve.cvss;
+            return map;
+        }, {});
+
+        const enrichedExploits = exploits.map(exploit => ({
+            ...exploit,
+            cvss: cveCvssMap[exploit.cve] || 0 // Asignar 0 si no se encuentra el CVE
+        })).sort((a, b) => b.cvss - a.cvss); // Ordenar por CVSS descendente
+
+        if (enrichedExploits.length === 0) {
+            container.innerHTML = `<p>No hay exploits para mostrar en el período seleccionado.</p>`;
+            return;
+        }
+
+        const headers = `<tr><th>Nombre del Exploit</th><th>CVE Asociado</th><th>Severidad (CVSS)</th></tr>`;
+        const bodyHTML = enrichedExploits.map(item => `
+            <tr>
+                <td>${item.nombre}</td>
+                <td>${item.cve || 'N/A'}</td>
+                <td><span class="badge ${getSeverityClass(item.cvss)}">${getSeverityText(item.cvss)} (${item.cvss})</span></td>
+            </tr>`).join('');
+
+        table.querySelector('thead').innerHTML = headers;
+        table.querySelector('tbody').innerHTML = bodyHTML;
+    }
+
+
+    // =============================================================================
+    // MODAL LOGIC (PARA EDICIÓN Y CREACIÓN)
+    // =============================================================================
+    function setupWidgetModal() {
+        const modal = document.getElementById('widgetModal');
+        const btn = document.getElementById('addWidgetBtn');
+        const span = modal.querySelector('.close-modal');
+
+        btn.onclick = () => { openAddWidgetModal(); };
         span.onclick = () => { modal.style.display = 'none'; };
         window.onclick = (event) => { if (event.target == modal) { modal.style.display = 'none'; } };
 
-        const widgetTypeSelect = document.getElementById('widgetType');
-        const chartDataSourceSelect = document.getElementById('chartDataSource');
-        const specialComponentSelect = document.getElementById('specialComponentSource');
-
-        widgetTypeSelect.addEventListener('change', (e) => {
+        document.getElementById('widgetType').addEventListener('change', (e) => {
             const type = e.target.value;
             document.querySelectorAll('.form-section').forEach(el => el.style.display = 'none');
             if (type === 'chart') document.getElementById('chartOptions').style.display = 'block';
@@ -1480,47 +1705,128 @@ function getBadgeClassForZeroDayEstado(estado) {
             else if (type === 'special') document.getElementById('specialOptions').style.display = 'block';
         });
 
-        chartDataSourceSelect.addEventListener('change', (e) => {
-            populateGroupBySelect(e.target.value);
-        });
-
-        specialComponentSelect.addEventListener('change', (e) => {
-            const componentKey = e.target.value;
-            if (componentKey && SPECIAL_COMPONENTS[componentKey]) {
-                document.getElementById('widgetTitle').value = SPECIAL_COMPONENTS[componentKey].defaultTitle;
+        document.getElementById('chartDataSource').addEventListener('change', (e) => {
+            const selectedValue = e.target.value;
+            const isCorrelated = selectedValue.startsWith('corr_');
+            
+            // Ocultar/mostrar campos irrelevantes para gráficos de correlación
+            document.getElementById('chartGroupBy').style.display = isCorrelated ? 'none' : 'block';
+            document.getElementById('chartGroupBy').previousElementSibling.style.display = isCorrelated ? 'none' : 'block';
+            document.getElementById('chartType').style.display = isCorrelated ? 'none' : 'block';
+            document.getElementById('chartType').previousElementSibling.style.display = isCorrelated ? 'none' : 'block';
+            
+            if (isCorrelated) {
+                const key = selectedValue.substring(5);
+                if (SPECIAL_CHARTS_AND_TABLES[key]) {
+                    document.getElementById('widgetTitle').value = SPECIAL_CHARTS_AND_TABLES[key].defaultTitle;
+                }
+            } else {
+                 populateGroupBySelect(selectedValue);
             }
         });
 
-        document.getElementById('addWidgetForm').addEventListener('submit', (e) => {
+        document.getElementById('specialComponentSource').addEventListener('change', (e) => {
+            const key = e.target.value;
+            if (key && SPECIAL_COMPONENTS[key]) document.getElementById('widgetTitle').value = SPECIAL_COMPONENTS[key].defaultTitle;
+        });
+
+        document.getElementById('widgetForm').addEventListener('submit', (e) => {
             e.preventDefault();
-            const newWidget = {
-                id: `widget-${Date.now()}`,
+            const widgetId = document.getElementById('widgetEditId').value;
+            const newConfig = {
                 title: document.getElementById('widgetTitle').value,
                 type: document.getElementById('widgetType').value,
                 size: document.getElementById('widgetSize').value,
             };
 
-            if (newWidget.type === 'chart') {
-                newWidget.chartType = document.getElementById('chartType').value;
-                newWidget.source = document.getElementById('chartDataSource').value;
-                newWidget.groupBy = document.getElementById('chartGroupBy').value;
-            } else if (newWidget.type === 'table') {
-                newWidget.source = document.getElementById('tableDataSource').value;
-            } else if (newWidget.type === 'special') {
-                const componentKey = document.getElementById('specialComponentSource').value;
-                newWidget.component = componentKey;
-                newWidget.isDeletable = SPECIAL_COMPONENTS[componentKey].isDeletable;
+            if (newConfig.type === 'chart') {
+                const chartSource = document.getElementById('chartDataSource').value;
+                if (chartSource.startsWith('corr_')) {
+                    newConfig.source = chartSource; 
+                    newConfig.chartType = 'bar'; // Forzar a bar por defecto para los especiales
+                } else {
+                    newConfig.chartType = document.getElementById('chartType').value;
+                    newConfig.source = chartSource;
+                    newConfig.groupBy = document.getElementById('chartGroupBy').value;
+                }
+            } else if (newConfig.type === 'table') {
+                const tableSource = document.getElementById('tableDataSource').value;
+                newConfig.source = tableSource; 
+            } else if (newConfig.type === 'special') {
+                newConfig.component = document.getElementById('specialComponentSource').value;
             }
             
-            addWidget(newWidget);
+            if (widgetId) { 
+                const index = dashboardState.layoutConfig.findIndex(w => w.id === widgetId);
+                if (index > -1) {
+                    dashboardState.layoutConfig[index] = { ...dashboardState.layoutConfig[index], ...newConfig };
+                }
+            } else {
+                newConfig.id = `widget-${Date.now()}`;
+                dashboardState.layoutConfig.push(newConfig);
+            }
+            
+            renderDynamicDashboard();
             modal.style.display = 'none';
         });
     }
 
-    function resetModalForm() {
-        document.getElementById('addWidgetForm').reset();
+    function openAddWidgetModal() {
+        const modal = document.getElementById('widgetModal');
+        document.getElementById('widgetForm').reset();
+        document.getElementById('widgetEditId').value = '';
+        document.getElementById('widgetModalTitle').textContent = 'Añadir Nuevo Elemento';
+        document.getElementById('saveWidgetBtn').innerHTML = `<i class="fa-solid fa-plus"></i> Añadir Elemento`;
+        document.querySelectorAll('.form-section').forEach(el => el.style.display = 'none');
+        populateModalDropdowns();
+        modal.style.display = 'block';
+    }
+
+    function openEditWidgetModal(widgetId) {
+        const widget = dashboardState.layoutConfig.find(w => w.id === widgetId);
+        if (!widget) return;
+        
+        const modal = document.getElementById('widgetModal');
+        document.getElementById('widgetForm').reset();
+        populateModalDropdowns();
+        
+        document.getElementById('widgetEditId').value = widget.id;
+        document.getElementById('widgetModalTitle').textContent = 'Editar Elemento del Dashboard';
+        document.getElementById('saveWidgetBtn').innerHTML = `<i class="fa-solid fa-save"></i> Guardar Cambios`;
+        
+        document.getElementById('widgetTitle').value = widget.title;
+        document.getElementById('widgetSize').value = widget.size;
+        document.getElementById('widgetType').value = widget.type;
+        
         document.querySelectorAll('.form-section').forEach(el => el.style.display = 'none');
         
+        if (widget.type === 'chart') {
+            document.getElementById('chartOptions').style.display = 'block';
+            document.getElementById('chartDataSource').value = widget.source;
+            
+            const isCorrelated = widget.source.startsWith('corr_');
+            document.getElementById('chartGroupBy').style.display = isCorrelated ? 'none' : 'block';
+            document.getElementById('chartGroupBy').previousElementSibling.style.display = isCorrelated ? 'none' : 'block';
+            document.getElementById('chartType').style.display = isCorrelated ? 'none' : 'block';
+            document.getElementById('chartType').previousElementSibling.style.display = isCorrelated ? 'none' : 'block';
+
+            if (!isCorrelated) {
+                document.getElementById('chartType').value = widget.chartType;
+                populateGroupBySelect(widget.source);
+                document.getElementById('chartGroupBy').value = widget.groupBy;
+            }
+        } else if (widget.type === 'table') {
+            document.getElementById('tableOptions').style.display = 'block';
+            document.getElementById('tableDataSource').value = widget.source;
+        } else if (widget.type === 'special') {
+            document.getElementById('specialOptions').style.display = 'block';
+            document.getElementById('specialComponentSource').value = widget.component;
+        }
+        
+        modal.style.display = 'block';
+    }
+
+    function populateModalDropdowns() {
         const chartDataSourceSelect = document.getElementById('chartDataSource');
         const tableDataSourceSelect = document.getElementById('tableDataSource');
         const specialComponentSelect = document.getElementById('specialComponentSource');
@@ -1529,17 +1835,34 @@ function getBadgeClassForZeroDayEstado(estado) {
         tableDataSourceSelect.innerHTML = '';
         specialComponentSelect.innerHTML = '';
 
-        Object.entries(DATA_SOURCES).forEach(([key, value]) => {
-            chartDataSourceSelect.add(new Option(value.label, key));
-        });
-        
-        ['incidentes', 'cves', 'exploits', 'zero-days'].forEach(key => {
-            tableDataSourceSelect.add(new Option(DATA_SOURCES[key].label, key));
-        });
+        // --- Llenar Gráficos ---
+        const simpleChartsGroup = document.createElement('optgroup');
+        simpleChartsGroup.label = 'Gráficos Simples (1 Fuente)';
+        Object.entries(DATA_SOURCES).forEach(([key, value]) => simpleChartsGroup.appendChild(new Option(value.label, key)));
+        chartDataSourceSelect.appendChild(simpleChartsGroup);
 
-        Object.entries(SPECIAL_COMPONENTS).forEach(([key, value]) => {
-            specialComponentSelect.add(new Option(value.label, key));
+        const correlatedChartsGroup = document.createElement('optgroup');
+        correlatedChartsGroup.label = 'Gráficos de Correlación';
+        Object.entries(SPECIAL_CHARTS_AND_TABLES).filter(([, val]) => val.type === 'chart').forEach(([key, value]) => {
+            correlatedChartsGroup.appendChild(new Option(value.label, `corr_${key}`));
         });
+        chartDataSourceSelect.appendChild(correlatedChartsGroup);
+
+        // --- Llenar Tablas ---
+        const simpleTablesGroup = document.createElement('optgroup');
+        simpleTablesGroup.label = 'Tablas Simples (Últimos 5)';
+        ['incidentes', 'cves', 'exploits', 'zero-days'].forEach(key => simpleTablesGroup.appendChild(new Option(DATA_SOURCES[key].label, key)));
+        tableDataSourceSelect.appendChild(simpleTablesGroup);
+
+        const correlatedTablesGroup = document.createElement('optgroup');
+        correlatedTablesGroup.label = 'Tablas Correlacionadas';
+        Object.entries(SPECIAL_CHARTS_AND_TABLES).filter(([, val]) => val.type === 'table').forEach(([key, value]) => {
+            correlatedTablesGroup.appendChild(new Option(value.label, `corr_${key}`));
+        });
+        tableDataSourceSelect.appendChild(correlatedTablesGroup);
+        
+        // --- Llenar Componentes Especiales ---
+        Object.entries(SPECIAL_COMPONENTS).forEach(([key, value]) => specialComponentSelect.add(new Option(value.label, key)));
         
         populateGroupBySelect(chartDataSourceSelect.value);
     }
@@ -1566,421 +1889,414 @@ function getBadgeClassForZeroDayEstado(estado) {
         }
         XLSX.writeFile(workbook, 'OSINT_Reporte_Completo_API.xlsx');
     }
+
     function handlePdfExportClick() {
         const startDateStr = document.getElementById('reportStartDate').value; const endDateStr = document.getElementById('reportEndDate').value;
         if (!startDateStr || !endDateStr) { alert('Por favor, seleccione una fecha de inicio y una fecha de fin para el reporte.'); return; }
         if (new Date(startDateStr) > new Date(endDateStr)) { alert('La fecha de inicio no puede ser posterior a la fecha de fin.'); return; }
         generarReportePDF(startDateStr, endDateStr);
     }
-    async function generarReportePDF(startDateStr, endDateStr) {
-    // 1. VERIFICACIÓN Y CONFIGURACIÓN INICIAL
-    if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
-        alert('Error: La librería principal jsPDF no se cargó correctamente.');
-        return;
-    }
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'pt', 'a4');
-    if (typeof doc.autoTable !== 'function') {
-        alert('Error: El plugin jsPDF-AutoTable no se cargó correctamente.');
-        return;
-    }
-
-    const pageHeight = doc.internal.pageSize.height;
-    const pageWidth = doc.internal.pageSize.width;
-    const margin = 45;
-    let yPos = 0;
-
-    const COLOR_PRIMARY_PURPLE = '#6A3093';
-    const COLOR_BLACK = '#1c1c1c';
-    const COLOR_WHITE = '#FFFFFF';
-    const COLOR_GREY_TEXT = '#333333';
-    const COLOR_LIGHT_GREY_BG = '#F8F9FA';
-    const COLOR_LINK = '#2574A9';
-
-    const FONT_H1 = 22;
-    const FONT_H2 = 14;
-    const FONT_H3 = 11;
-    const FONT_NORMAL = 10;
-    const FONT_SMALL = 8;
-
-    const autoTableOptions = {
-        theme: 'striped',
-        headStyles: { fillColor: COLOR_BLACK, textColor: COLOR_WHITE, fontSize: FONT_SMALL },
-        styles: { fontSize: FONT_SMALL, cellPadding: 4, valign: 'middle' },
-        margin: { left: margin, right: margin }
-    };
-
-    const imgElement = document.getElementById('fondo-pdf');
-    let backgroundImageData = null;
-
-    if (imgElement && imgElement.complete && imgElement.naturalWidth !== 0) {
-        try {
-            const canvas = document.createElement('canvas');
-            canvas.width = imgElement.naturalWidth;
-            canvas.height = imgElement.naturalHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(imgElement, 0, 0);
-            backgroundImageData = canvas.toDataURL('image/jpeg');
-        } catch (e) {
-            console.error("Error al convertir la imagen para el PDF:", e);
-            backgroundImageData = null;
-        }
-    } else {
-        console.error("La imagen de fondo con id 'fondo-pdf' no se encontró o no se pudo cargar.");
-    }
-
-    // 2. FILTRADO Y CARGA DE DATOS
-    const startDate = new Date(startDateStr);
-    const endDate = new Date(endDateStr);
-    endDate.setHours(23, 59, 59, 999);
     
-    const filterByDate = (item) => {
-        if (!item.fecha) return false;
-        const itemDate = new Date(item.fecha);
-        return itemDate >= startDate && itemDate <= endDate;
-    };
-
-    const incidentesData = (ALL_DATA_CACHE.incidentes || []).filter(filterByDate);
-    const exploitsData = (ALL_DATA_CACHE.exploits || []).filter(filterByDate);
-    const zeroDaysData = (ALL_DATA_CACHE['zero-days'] || []).filter(filterByDate);
-    const cvesData = (ALL_DATA_CACHE.cves || []).filter(filterByDate);
-    const alertasData = (ALL_DATA_CACHE.alertas || []).filter(filterByDate);
-    const mitigacionesData = (ALL_DATA_CACHE.mitigaciones || []).filter(filterByDate);
-    const fuentesData = (ALL_DATA_CACHE.fuentes || []).filter(filterByDate);
-
-    // 3. FUNCIONES AUXILIARES DE RENDERIZADO
-    const addPageFooter = () => {
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            doc.setFontSize(FONT_SMALL);
-            doc.setTextColor(COLOR_GREY_TEXT);
-            const footerText = `Este reporte es clasificado como TLP:CLEAR (https://first.org/tlp/)`;
-            doc.text(footerText, margin, pageHeight - 20);
-            doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 20, { align: 'right' });
+    async function generarReportePDF(startDateStr, endDateStr) {
+        if (typeof window.jspdf === 'undefined' || typeof window.jspdf.jsPDF === 'undefined') {
+            alert('Error: La librería principal jsPDF no se cargó correctamente.');
+            return;
         }
-    };
-
-    const checkAndAddPage = (neededHeight) => {
-        if (yPos + neededHeight > pageHeight - margin - 20) {
-            doc.addPage();
-            yPos = margin;
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'pt', 'a4');
+        if (typeof doc.autoTable !== 'function') {
+            alert('Error: El plugin jsPDF-AutoTable no se cargó correctamente.');
+            return;
         }
-    };
 
-    const addSectionTitle = (title) => {
-        // --- CORRECCIÓN APLICADA AQUÍ ---
-        // Se aumenta el espacio requerido a 115 para asegurar que el título
-        // no quede huérfano al final de la página. (65 para el título + 50 para contenido)
-        checkAndAddPage(115); 
+        const pageHeight = doc.internal.pageSize.height;
+        const pageWidth = doc.internal.pageSize.width;
+        const margin = 45;
+        let yPos = 0;
+
+        const COLOR_PRIMARY_PURPLE = '#6A3093';
+        const COLOR_BLACK = '#1c1c1c';
+        const COLOR_WHITE = '#FFFFFF';
+        const COLOR_GREY_TEXT = '#333333';
+        const COLOR_LIGHT_GREY_BG = '#F8F9FA';
+        const COLOR_LINK = '#2574A9';
+
+        const FONT_H1 = 22;
+        const FONT_H2 = 14;
+        const FONT_H3 = 11;
+        const FONT_NORMAL = 10;
+        const FONT_SMALL = 8;
+
+        const autoTableOptions = {
+            theme: 'striped',
+            headStyles: { fillColor: COLOR_BLACK, textColor: COLOR_WHITE, fontSize: FONT_SMALL },
+            styles: { fontSize: FONT_SMALL, cellPadding: 4, valign: 'middle' },
+            margin: { left: margin, right: margin }
+        };
+
+        const imgElement = document.getElementById('fondo-pdf');
+        let backgroundImageData = null;
+
+        if (imgElement && imgElement.complete && imgElement.naturalWidth !== 0) {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = imgElement.naturalWidth;
+                canvas.height = imgElement.naturalHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(imgElement, 0, 0);
+                backgroundImageData = canvas.toDataURL('image/jpeg');
+            } catch (e) {
+                console.error("Error al convertir la imagen para el PDF:", e);
+                backgroundImageData = null;
+            }
+        } else {
+            console.error("La imagen de fondo con id 'fondo-pdf' no se encontró o no se pudo cargar.");
+        }
+
+        const startDate = new Date(startDateStr);
+        const endDate = new Date(endDateStr);
+        endDate.setHours(23, 59, 59, 999);
         
-        yPos += 20;
-        doc.setFillColor(COLOR_PRIMARY_PURPLE);
-        doc.rect(0, yPos, pageWidth, 25, 'F');
-        doc.setFontSize(FONT_H2);
+        const filterByDate = (item) => {
+            if (!item.fecha) return false;
+            const itemDate = new Date(item.fecha);
+            return itemDate >= startDate && itemDate <= endDate;
+        };
+
+        const incidentesData = (ALL_DATA_CACHE.incidentes || []).filter(filterByDate);
+        const exploitsData = (ALL_DATA_CACHE.exploits || []).filter(filterByDate);
+        const zeroDaysData = (ALL_DATA_CACHE['zero-days'] || []).filter(filterByDate);
+        const cvesData = (ALL_DATA_CACHE.cves || []).filter(filterByDate);
+        const alertasData = (ALL_DATA_CACHE.alertas || []).filter(filterByDate);
+        const mitigacionesData = (ALL_DATA_CACHE.mitigaciones || []).filter(filterByDate);
+        const fuentesData = (ALL_DATA_CACHE.fuentes || []).filter(filterByDate);
+
+        const addPageFooter = () => {
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(FONT_SMALL);
+                doc.setTextColor(COLOR_GREY_TEXT);
+                const footerText = `Este reporte es clasificado como TLP:CLEAR (https://first.org/tlp/)`;
+                doc.text(footerText, margin, pageHeight - 20);
+                doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 20, { align: 'right' });
+            }
+        };
+
+        const checkAndAddPage = (neededHeight) => {
+            if (yPos + neededHeight > pageHeight - margin - 20) {
+                doc.addPage();
+                yPos = margin;
+            }
+        };
+
+        const addSectionTitle = (title) => {
+            checkAndAddPage(115); 
+            yPos += 20;
+            doc.setFillColor(COLOR_PRIMARY_PURPLE);
+            doc.rect(0, yPos, pageWidth, 25, 'F');
+            doc.setFontSize(FONT_H2);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(COLOR_WHITE);
+            doc.text(title.toUpperCase(), margin, yPos + 17);
+            yPos += 25 + 20;
+        };
+
+        const addIntroductoryText = (text) => {
+            checkAndAddPage(60);
+            doc.setFontSize(FONT_NORMAL);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(COLOR_BLACK);
+            const textLines = doc.splitTextToSize(text, pageWidth - margin * 2);
+            doc.text(textLines, margin, yPos);
+            yPos += doc.getTextDimensions(textLines).h + 20;
+        };
+        
+        const addNoDataMessage = (message = 'No se registraron datos para esta sección en el período seleccionado.') => {
+            checkAndAddPage(30);
+            doc.setFontSize(FONT_NORMAL);
+            doc.setFont('helvetica', 'italic');
+            doc.setTextColor(COLOR_GREY_TEXT);
+            doc.text(message, margin, yPos);
+            yPos += doc.getTextDimensions(message).h + 20;
+        };
+
+        const getTopItems = (data, key, count = 2) => {
+            const counts = data.reduce((acc, item) => {
+                const value = item[key];
+                if (value && typeof value === 'string' && value.trim() && value.trim().toLowerCase() !== 'desconocido') {
+                    acc[value.trim()] = (acc[value.trim()] || 0) + 1;
+                }
+                return acc;
+            }, {});
+            return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, count).map(e => e[0]);
+        };
+
+        const getSeverityTextForCVSS = (cvss) => {
+            const score = parseFloat(cvss);
+            if (isNaN(score)) return 'N/A';
+            if (score >= 9.0) return 'Crítico';
+            if (score >= 7.0) return 'Alto';
+            if (score >= 4.0) return 'Medio';
+            if (score > 0) return 'Bajo';
+            return 'Info';
+        };
+
+        const formatDate = (dateString) => {
+            if (!dateString) return 'Fecha no especificada';
+            const date = new Date(dateString);
+            if (!(date instanceof Date && !isNaN(date))) return dateString;
+            return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+        };
+
+        const renderTextItem = (config) => {
+            const availableWidth = pageWidth - margin * 2;
+            checkAndAddPage(config.neededHeight || 80);
+            doc.setFontSize(FONT_H3);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(COLOR_PRIMARY_PURPLE);
+            const titleLines = doc.splitTextToSize(config.title, availableWidth);
+            doc.text(titleLines, margin, yPos);
+            yPos += doc.getTextDimensions(titleLines).h + 5;
+
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(FONT_NORMAL);
+            doc.setTextColor(COLOR_GREY_TEXT);
+
+            config.details.forEach(detail => {
+                if (detail.value) {
+                    const detailText = detail.label + detail.value;
+                    const detailLines = doc.splitTextToSize(detailText, availableWidth);
+                    doc.text(detailLines, margin, yPos);
+                    yPos += doc.getTextDimensions(detailLines).h + 5;
+                }
+            });
+            
+            if (config.url) {
+                yPos += 5;
+                checkAndAddPage(15);
+                doc.setTextColor(COLOR_LINK);
+                doc.textWithLink('Visitar URL', margin, yPos, { url: config.url });
+                doc.setTextColor(COLOR_GREY_TEXT);
+                yPos += 15;
+            }
+
+            yPos += 5;
+
+            if (config.description) {
+                const descLines = doc.splitTextToSize(`${config.description}`, availableWidth);
+                doc.text(descLines, margin, yPos);
+                yPos += doc.getTextDimensions(descLines).h;
+            }
+
+            yPos += 25;
+        };
+
+        const drawMetricsCards = (startY) => {
+            const metrics = [
+                { label: 'Incidentes', value: incidentesData.length },
+                { label: 'Exploits', value: exploitsData.length },
+                { label: 'Zero-Days', value: zeroDaysData.length },
+                { label: 'CVEs Nuevos', value: cvesData.length },
+                { label: 'Alertas', value: alertasData.length },
+                { label: 'Mitigaciones', value: mitigacionesData.length },
+            ];
+            const numColumns = 3;
+            const cardGap = 15;
+            const availableWidth = pageWidth - (margin * 2) - (cardGap * (numColumns - 1));
+            const cardWidth = availableWidth / numColumns;
+            const cardHeight = 60;
+            metrics.forEach((metric, index) => {
+                const col = index % numColumns;
+                const row = Math.floor(index / numColumns);
+                const cardX = margin + col * (cardWidth + cardGap);
+                const cardY = startY + row * (cardHeight + cardGap);
+                doc.setFillColor(COLOR_LIGHT_GREY_BG);
+                doc.setDrawColor('#EAECEE');
+                doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 5, 5, 'FD');
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(28);
+                doc.setTextColor(COLOR_GREY_TEXT);
+                doc.text(String(metric.value), cardX + cardWidth / 2, cardY + 35, { align: 'center' });
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(10);
+                doc.setTextColor(COLOR_GREY_TEXT);
+                doc.text(metric.label, cardX + cardWidth / 2, cardY + 50, { align: 'center' });
+            });
+            const numRows = Math.ceil(metrics.length / numColumns);
+            return startY + (numRows * cardHeight) + ((numRows - 1) * cardGap);
+        };
+
+        if (backgroundImageData) {
+            doc.addImage(backgroundImageData, 'JPEG', 0, 0, pageWidth, 250);
+        } else {
+            doc.setFillColor(COLOR_BLACK);
+            doc.rect(0, 0, pageWidth, 250, 'F');
+        }
+
+        doc.setFontSize(FONT_H1);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(COLOR_WHITE);
-        doc.text(title.toUpperCase(), margin, yPos + 17);
-        yPos += 25 + 20;
-    };
+        doc.text('CYBER THREAT INTELLIGENCE BRIEF', margin, 100);
+        doc.setFontSize(48);
+        doc.text('ACCENTURE', margin, 155);
 
-    const addIntroductoryText = (text) => {
-        checkAndAddPage(60);
-        doc.setFontSize(FONT_NORMAL);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(COLOR_BLACK);
-        const textLines = doc.splitTextToSize(text, pageWidth - margin * 2);
-        doc.text(textLines, margin, yPos);
-        yPos += doc.getTextDimensions(textLines).h + 20;
-    };
-    
-    const addNoDataMessage = (message = 'No se registraron datos para esta sección en el período seleccionado.') => {
-        checkAndAddPage(30);
-        doc.setFontSize(FONT_NORMAL);
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(COLOR_GREY_TEXT);
-        doc.text(message, margin, yPos);
-        yPos += doc.getTextDimensions(message).h + 20;
-    };
+        yPos = 205;
 
-    const getTopItems = (data, key, count = 2) => {
-        const counts = data.reduce((acc, item) => {
-            const value = item[key];
-            if (value && typeof value === 'string' && value.trim() && value.trim().toLowerCase() !== 'desconocido') {
-                acc[value.trim()] = (acc[value.trim()] || 0) + 1;
-            }
-            return acc;
-        }, {});
-        return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, count).map(e => e[0]);
-    };
+        const reportMonthName = startDate.toLocaleDateString('es-ES', { month: 'long', timeZone: 'UTC' });
+        const capitalizedMonth = reportMonthName.charAt(0).toUpperCase() + reportMonthName.slice(1);
+        const reportYear = startDate.getFullYear();
+        const reportPeriodText = `${capitalizedMonth} ${reportYear}`;
 
-    const getSeverityTextForCVSS = (cvss) => {
-        const score = parseFloat(cvss);
-        if (isNaN(score)) return 'N/A';
-        if (score >= 9.0) return 'Crítico';
-        if (score >= 7.0) return 'Alto';
-        if (score >= 4.0) return 'Medio';
-        if (score > 0) return 'Bajo';
-        return 'Info';
-    };
-
-    const formatDate = (dateString) => {
-        if (!dateString) return 'Fecha no especificada';
-        const date = new Date(dateString);
-        if (!(date instanceof Date && !isNaN(date))) return dateString;
-        return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-    };
-
-    const renderTextItem = (config) => {
-        const availableWidth = pageWidth - margin * 2;
-        checkAndAddPage(config.neededHeight || 80);
+        doc.setFillColor(COLOR_BLACK);
+        doc.rect(margin, yPos, 150, 25, 'F');
         doc.setFontSize(FONT_H3);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(COLOR_PRIMARY_PURPLE);
-        const titleLines = doc.splitTextToSize(config.title, availableWidth);
-        doc.text(titleLines, margin, yPos);
-        yPos += doc.getTextDimensions(titleLines).h + 5;
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(FONT_NORMAL);
-        doc.setTextColor(COLOR_GREY_TEXT);
-
-        config.details.forEach(detail => {
-            if (detail.value) {
-                const detailText = detail.label + detail.value;
-                const detailLines = doc.splitTextToSize(detailText, availableWidth);
-                doc.text(detailLines, margin, yPos);
-                yPos += doc.getTextDimensions(detailLines).h + 5;
-            }
-        });
-        
-        if (config.url) {
-            yPos += 5;
-            checkAndAddPage(15);
-            doc.setTextColor(COLOR_LINK);
-            doc.textWithLink('Visitar URL', margin, yPos, { url: config.url });
-            doc.setTextColor(COLOR_GREY_TEXT);
-            yPos += 15;
-        }
-
-        yPos += 5;
-
-        if (config.description) {
-            const descLines = doc.splitTextToSize(`${config.description}`, availableWidth);
-            doc.text(descLines, margin, yPos);
-            yPos += doc.getTextDimensions(descLines).h;
-        }
+        doc.setTextColor(COLOR_WHITE);
+        doc.text(reportPeriodText, margin + 10, yPos + 17);
 
         yPos += 25;
-    };
+        yPos += 35;
+        yPos = drawMetricsCards(yPos);
+        yPos += 10;
 
-    const drawMetricsCards = (startY) => {
-        const metrics = [
-            { label: 'Incidentes', value: incidentesData.length },
-            { label: 'Exploits', value: exploitsData.length },
-            { label: 'Zero-Days', value: zeroDaysData.length },
-            { label: 'CVEs Nuevos', value: cvesData.length },
-            { label: 'Alertas', value: alertasData.length },
-            { label: 'Mitigaciones', value: mitigacionesData.length },
-        ];
-        const numColumns = 3;
-        const cardGap = 15;
-        const availableWidth = pageWidth - (margin * 2) - (cardGap * (numColumns - 1));
-        const cardWidth = availableWidth / numColumns;
-        const cardHeight = 60;
-        metrics.forEach((metric, index) => {
-            const col = index % numColumns;
-            const row = Math.floor(index / numColumns);
-            const cardX = margin + col * (cardWidth + cardGap);
-            const cardY = startY + row * (cardHeight + cardGap);
-            doc.setFillColor(COLOR_LIGHT_GREY_BG);
-            doc.setDrawColor('#EAECEE');
-            doc.roundedRect(cardX, cardY, cardWidth, cardHeight, 5, 5, 'FD');
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(28);
-            doc.setTextColor(COLOR_GREY_TEXT);
-            doc.text(String(metric.value), cardX + cardWidth / 2, cardY + 35, { align: 'center' });
-            doc.setFont('helvetica', 'normal');
-            doc.setFontSize(10);
-            doc.setTextColor(COLOR_GREY_TEXT);
-            doc.text(metric.label, cardX + cardWidth / 2, cardY + 50, { align: 'center' });
-        });
-        const numRows = Math.ceil(metrics.length / numColumns);
-        return startY + (numRows * cardHeight) + ((numRows - 1) * cardGap);
-    };
+        addSectionTitle('RESUMEN EJECUTIVO');
+        const criticalVulns = cvesData.filter(cve => (cve.cvss || 0) >= 9.0);
+        const topSectors = getTopItems(incidentesData, 'sector');
+        const topActors = getTopItems(incidentesData, 'actor');
+        let summaryParagraph = `Análisis correspondiente al mes de ${reportMonthName} de ${reportYear}. Durante este tiempo, se publicaron ${cvesData.length} nuevas vulnerabilidades, de las cuales ${criticalVulns.length} se calificaron como críticas (CVSS 9.0+). Se registraron ${incidentesData.length} incidentes relevantes, con especial afectación al sector ${topSectors.length > 0 ? topSectors.join(' y ') : 'diversos'}. Los grupos de amenaza más destacados fueron ${topActors.length > 0 ? topActors.join(', ') : 'varios'}. Además, se descubrieron ${zeroDaysData.length} nuevas vulnerabilidades de día cero y se publicaron ${exploitsData.length} exploits con prueba de concepto.`;
+        addIntroductoryText(summaryParagraph);
 
-    // 4. CONSTRUCCIÓN DEL DOCUMENTO PDF
-    
-    if (backgroundImageData) {
-        doc.addImage(backgroundImageData, 'JPEG', 0, 0, pageWidth, 250);
-    } else {
-        doc.setFillColor(COLOR_BLACK);
-        doc.rect(0, 0, pageWidth, 250, 'F');
-    }
+        addSectionTitle('Incidentes');
+        addIntroductoryText('El conocimiento y la vigilancia de los ciber incidentes es fundamental para la seguridad de cualquier organización. La respuesta ante estos incidentes y su posterior análisis post mortem son cruciales para el proceso de fortalecimiento de los sistemas. Al mantenerse informadas sobre los últimos ataques, las organizaciones pueden identificar y mitigar posibles amenazas.');
+        if (incidentesData.length > 0) {
+            [...incidentesData].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).forEach(item => renderTextItem({
+                title: `${item.tipo || 'N/A'} - ${item.entidad || 'Entidad no especificada'}`,
+                details: [
+                    { label: 'Fecha: ', value: formatDate(item.fecha) },
+                    { label: 'Actor de Amenazas: ', value: item.actor || 'Desconocido' },
+                    { label: 'País y Sector: ', value: `${item.pais || 'N/A'} | ${item.sector || 'N/A'}` },
+                    { label: 'Datos Comprometidos: ', value: item.datosComprometidos || 'N/A' }
+                ],
+                description: item.descripcion || 'Sin descripción.',
+                url: item.url
+            }));
+        } else { 
+            addNoDataMessage();
+        }
 
-    doc.setFontSize(FONT_H1);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(COLOR_WHITE);
-    doc.text('CYBER THREAT INTELLIGENCE BRIEF', margin, 100);
-    doc.setFontSize(48);
-    doc.text('ACCENTURE', margin, 155);
-
-    yPos = 205;
-
-    const reportMonthName = startDate.toLocaleDateString('es-ES', { month: 'long', timeZone: 'UTC' });
-    const capitalizedMonth = reportMonthName.charAt(0).toUpperCase() + reportMonthName.slice(1);
-    const reportYear = startDate.getFullYear();
-    const reportPeriodText = `${capitalizedMonth} ${reportYear}`;
-
-    doc.setFillColor(COLOR_BLACK);
-    doc.rect(margin, yPos, 150, 25, 'F');
-    doc.setFontSize(FONT_H3);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(COLOR_WHITE);
-    doc.text(reportPeriodText, margin + 10, yPos + 17);
-
-    yPos += 25;
-    yPos += 35;
-    yPos = drawMetricsCards(yPos);
-    yPos += 10;
-
-    addSectionTitle('RESUMEN EJECUTIVO');
-    const criticalVulns = cvesData.filter(cve => (cve.cvss || 0) >= 9.0);
-    const topSectors = getTopItems(incidentesData, 'sector');
-    const topActors = getTopItems(incidentesData, 'actor');
-    let summaryParagraph = `Análisis correspondiente al mes de ${reportMonthName} de ${reportYear}. Durante este tiempo, se publicaron ${cvesData.length} nuevas vulnerabilidades, de las cuales ${criticalVulns.length} se calificaron como críticas (CVSS 9.0+). Se registraron ${incidentesData.length} incidentes relevantes, con especial afectación al sector ${topSectors.length > 0 ? topSectors.join(' y ') : 'diversos'}. Los grupos de amenaza más destacados fueron ${topActors.length > 0 ? topActors.join(', ') : 'varios'}. Además, se descubrieron ${zeroDaysData.length} nuevas vulnerabilidades de día cero y se publicaron ${exploitsData.length} exploits con prueba de concepto.`;
-    addIntroductoryText(summaryParagraph);
-
-    addSectionTitle('Incidentes');
-    addIntroductoryText('El conocimiento y la vigilancia de los ciber incidentes es fundamental para la seguridad de cualquier organización. La respuesta ante estos incidentes y su posterior análisis post mortem son cruciales para el proceso de fortalecimiento de los sistemas. Al mantenerse informadas sobre los últimos ataques, las organizaciones pueden identificar y mitigar posibles amenazas.');
-    if (incidentesData.length > 0) {
-        [...incidentesData].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).forEach(item => renderTextItem({
-            title: `${item.tipo || 'N/A'} - ${item.entidad || 'Entidad no especificada'}`,
-            details: [
-                { label: 'Fecha: ', value: formatDate(item.fecha) },
-                { label: 'Actor de Amenazas: ', value: item.actor || 'Desconocido' },
-                { label: 'País y Sector: ', value: `${item.pais || 'N/A'} | ${item.sector || 'N/A'}` },
-                { label: 'Datos Comprometidos: ', value: item.datosComprometidos || 'N/A' }
-            ],
-            description: item.descripcion || 'Sin descripción.',
-            url: item.url
-        }));
-    } else { 
-        addNoDataMessage();
-    }
-
-    addSectionTitle('Exploits Publicados');
-    addIntroductoryText('Los exploit son puertas traseras que los atacantes pueden utilizar permitiendo el robo de datos, la instalación de malware, la toma de control de sistemas y múltiples ataques a sistemas informáticos. Al comprender estos exploit, la amenaza que representan y cómo funcionan, las empresas pueden tomar medidas proactivas para protegerse de ataques cibernéticos.');
-    if (exploitsData.length > 0) {
-        const sortedExploits = [...exploitsData].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-        doc.autoTable({ ...autoTableOptions, theme: 'grid', startY: yPos,
-            head: [['Fecha', 'Nombre', 'Tipo', 'Plataforma', 'CVE Asociado', 'URL']],
-            body: sortedExploits.map(e => [ formatDate(e.fecha), e.nombre || 'N/A', e.tipo || 'N/A', e.plataforma, e.cve || 'N/A', '' ]),
-            columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 'auto' }, 5: { cellWidth: 40, halign: 'center' } },
-            didDrawCell: (data) => {
-                if (data.column.index === 5 && data.row.section === 'body') {
-                    const exploit = sortedExploits[data.row.index];
-                    if (exploit && exploit.url) {
-                        doc.setTextColor(COLOR_LINK);
-                        doc.textWithLink('Ver', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 4, { url: exploit.url, align: 'center' });
+        addSectionTitle('Exploits Publicados');
+        addIntroductoryText('Los exploit son puertas traseras que los atacantes pueden utilizar permitiendo el robo de datos, la instalación de malware, la toma de control de sistemas y múltiples ataques a sistemas informáticos. Al comprender estos exploit, la amenaza que representan y cómo funcionan, las empresas pueden tomar medidas proactivas para protegerse de ataques cibernéticos.');
+        if (exploitsData.length > 0) {
+            const sortedExploits = [...exploitsData].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            doc.autoTable({ ...autoTableOptions, theme: 'grid', startY: yPos,
+                head: [['Fecha', 'Nombre', 'Tipo', 'Plataforma', 'CVE Asociado', 'URL']],
+                body: sortedExploits.map(e => [ formatDate(e.fecha), e.nombre || 'N/A', e.tipo || 'N/A', e.plataforma, e.cve || 'N/A', '' ]),
+                columnStyles: { 0: { cellWidth: 80 }, 1: { cellWidth: 'auto' }, 5: { cellWidth: 40, halign: 'center' } },
+                didDrawCell: (data) => {
+                    if (data.column.index === 5 && data.row.section === 'body') {
+                        const exploit = sortedExploits[data.row.index];
+                        if (exploit && exploit.url) {
+                            doc.setTextColor(COLOR_LINK);
+                            doc.textWithLink('Ver', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 4, { url: exploit.url, align: 'center' });
+                        }
                     }
                 }
-            }
-        });
-        yPos = doc.lastAutoTable.finalY + 20;
-    } else { 
-        addNoDataMessage();
-    }
-
-    addSectionTitle('Zero-Days');
-    addIntroductoryText('El conocimiento de los "zero days" o vulnerabilidades de día cero es fundamental en el ámbito de la ciberseguridad. Estas vulnerabilidades son fallos de seguridad en software o hardware que son desconocidos para los fabricantes y, por lo tanto, no tienen un parche o solución disponible en el momento de su descubrimiento.');
-    if (zeroDaysData.length > 0) {
-        [...zeroDaysData].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).forEach(item => renderTextItem({
-            title: `Zero Day: ${item.nombre || 'N/A'} (ID: ${item.idZD || 'N/A'})`,
-            details: [
-                { label: 'Fecha Detección: ', value: formatDate(item.fecha) },
-                { label: 'Plataforma Afectada: ', value: item.plataforma || 'N/A' },
-                { label: 'CVSS y Estado: ', value: `${item.cvss || 'N/A'} | ${item.estado || 'N/A'}` }
-            ],
-            description: item.descripcion || 'Sin descripción.',
-            url: item.url
-        }));
-    } else { 
-        addNoDataMessage();
-    }
-
-    addSectionTitle('Vulnerabilidades');
-    addIntroductoryText('Las Vulnerabilidades Comunes Enumeradas (CVE) proporcionan detalles sobre vulnerabilidades de seguridad en sistemas y software, permitiendo a las organizaciones identificar y mitigar posibles amenazas. Las CVE aquí listadas son sumamente relevantes para la seguridad de los sistemas, recomendamos realizar las mitigaciones necesarias para evitar la exposición a estas vulnerabilidades.');
-    if (cvesData.length > 0) {
-        const sortedCves = [...cvesData].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
-        doc.autoTable({ ...autoTableOptions, startY: yPos,
-            head: [['ID CVE', 'Aplicativo', 'Fecha Pub.','Descripción', 'CVSS (Severidad)', 'URL']],
-            body: sortedCves.map(c => [ c.cveId || 'N/A', c.aplicativo || 'N/A', formatDate(c.fecha), c.descripcion || 'N/A' , `${c.cvss || 'N/A'} (${getSeverityTextForCVSS(c.cvss)})`, '' ]),
-            columnStyles: {2: { cellWidth: 70 }, 3: { cellWidth: 'auto' }, 4: { cellWidth: 70 }, 5: { cellWidth: 40, halign: 'center' } },
-            didDrawCell: (data) => {
-                if (data.column.index === 5 && data.row.section === 'body') {
-                    const cve = sortedCves[data.row.index];
-                    if (cve && cve.url) {
-                        doc.setTextColor(COLOR_LINK);
-                        doc.textWithLink('Ver', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 4, { url: cve.url, align: 'center' });
-                    }
-                }
-            }
-        });
-        yPos = doc.lastAutoTable.finalY + 20;
-    } else { 
-        addNoDataMessage();
-    }
-    
-    addSectionTitle('Alertas CTI');
-    addIntroductoryText('Las alertas de Cyber Threat Intelligence son notificaciones que informan sobre amenazas cibernéticas identificadas, como vulnerabilidades o ataques activos. La importancia de estas alertas es su capacidad para comunicar información crítica de manera segura y eficiente, asegurando que solo las partes adecuadas tengan acceso a la información necesaria para protegerse contra amenazas cibernéticas.');
-    if (alertasData.length > 0) {
-        [...alertasData].sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(item => renderTextItem({
-            title: `${item.titulo || 'Sin título'} (Criticidad: ${item.criticidad || 'N/A'})`,
-            details: [{ label: 'Fecha: ', value: formatDate(item.fecha) }],
-            description: item.descripcion || 'Sin descripción.',
-            url: item.url
-        }));
-    } else { 
-        addNoDataMessage();
-    }
-
-    addSectionTitle('Recomendaciones para las Organizaciones');
-    addIntroductoryText('La inteligencia de amenazas (CTI) permite transformar datos en acciones defensivas proactivas, reduciendo la superficie de ataque y fortaleciendo la resiliencia frente a un panorama de amenazas cada vez más sofisticado y dirigido.');
-    if (mitigacionesData.length > 0) {
-        const priorityOrder = { 'Alta': 1, 'Media': 2, 'Baja': 3 };
-        [...mitigacionesData].sort((a,b) => (priorityOrder[a.prioridad] || 4) - (priorityOrder[b.prioridad] || 4)).forEach((item, index) => renderTextItem({
-            title: `${item.titulo || 'Recomendación sin título'}`,
-            details: [{ label: 'Categoría y Prioridad: ', value: `${item.categoria || 'N/A'} | ${item.prioridad || 'N/A'}` }],
-            description: item.descripcion || 'Sin descripción.',
-            url: item.url
-        }));
-    } else { 
-        addNoDataMessage('No se han definido mitigaciones específicas en el período seleccionado.');
-    }
-    
-    addSectionTitle('Fuentes de Inteligencia');
-    addIntroductoryText('En el último mes, nuestro equipo de CTI ha realizado un exhaustivo trabajo de recopilación y análisis de fuentes abiertas, utilizando diversas herramientas y metodologías de OSINT. Nuestro objetivo ha sido identificar y evaluar los riesgos latentes que amenazan la red abierta.');
-    if (fuentesData.length > 0) {
-        [...fuentesData].sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(f => {
-            renderTextItem({
-                title: f.nombre || 'Fuente sin nombre',
-                details: [{ label: 'Tipo: ', value: f.tipo || 'N/A' }],
-                description: f.descripcion,
-                url: f.url
             });
-        });
-    } else { 
-        addNoDataMessage();
-    }
-    
-    addSectionTitle('Equipo de CTI');
-    addIntroductoryText('El contenido de este boletin, sus recomendaciones, alertas y la evaluación del riesgo que estas amenazas representa para las organizaciones interesadas fue proporcionado por el equipo de Cyber Threat Intelligence del Clan de Cyber Resilience de Accenture Buenos Aires.');
+            yPos = doc.lastAutoTable.finalY + 20;
+        } else { 
+            addNoDataMessage();
+        }
 
-    // 5. FINALIZACIÓN Y GUARDADO DEL DOCUMENTO
-    addPageFooter();
-    doc.save(`Cyber_Threat_Intelligence_Brief_${capitalizedMonth}_${reportYear}.pdf`);
-}
+        addSectionTitle('Zero-Days');
+        addIntroductoryText('El conocimiento de los "zero days" o vulnerabilidades de día cero es fundamental en el ámbito de la ciberseguridad. Estas vulnerabilidades son fallos de seguridad en software o hardware que son desconocidos para los fabricantes y, por lo tanto, no tienen un parche o solución disponible en el momento de su descubrimiento.');
+        if (zeroDaysData.length > 0) {
+            [...zeroDaysData].sort((a, b) => new Date(b.fecha) - new Date(a.fecha)).forEach(item => renderTextItem({
+                title: `Zero Day: ${item.nombre || 'N/A'} (ID: ${item.idZD || 'N/A'})`,
+                details: [
+                    { label: 'Fecha Detección: ', value: formatDate(item.fecha) },
+                    { label: 'Plataforma Afectada: ', value: item.plataforma || 'N/A' },
+                    { label: 'CVSS y Estado: ', value: `${item.cvss || 'N/A'} | ${item.estado || 'N/A'}` }
+                ],
+                description: item.descripcion || 'Sin descripción.',
+                url: item.url
+            }));
+        } else { 
+            addNoDataMessage();
+        }
+
+        addSectionTitle('Vulnerabilidades');
+        addIntroductoryText('Las Vulnerabilidades Comunes Enumeradas (CVE) proporcionan detalles sobre vulnerabilidades de seguridad en sistemas y software, permitiendo a las organizaciones identificar y mitigar posibles amenazas. Las CVE aquí listadas son sumamente relevantes para la seguridad de los sistemas, recomendamos realizar las mitigaciones necesarias para evitar la exposición a estas vulnerabilidades.');
+        if (cvesData.length > 0) {
+            const sortedCves = [...cvesData].sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+            doc.autoTable({ ...autoTableOptions, startY: yPos,
+                head: [['ID CVE', 'Aplicativo', 'Fecha Pub.','Descripción', 'CVSS (Severidad)', 'URL']],
+                body: sortedCves.map(c => [ c.cveId || 'N/A', c.aplicativo || 'N/A', formatDate(c.fecha), c.descripcion || 'N/A' , `${c.cvss || 'N/A'} (${getSeverityTextForCVSS(c.cvss)})`, '' ]),
+                columnStyles: {2: { cellWidth: 70 }, 3: { cellWidth: 'auto' }, 4: { cellWidth: 70 }, 5: { cellWidth: 40, halign: 'center' } },
+                didDrawCell: (data) => {
+                    if (data.column.index === 5 && data.row.section === 'body') {
+                        const cve = sortedCves[data.row.index];
+                        if (cve && cve.url) {
+                            doc.setTextColor(COLOR_LINK);
+                            doc.textWithLink('Ver', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 4, { url: cve.url, align: 'center' });
+                        }
+                    }
+                }
+            });
+            yPos = doc.lastAutoTable.finalY + 20;
+        } else { 
+            addNoDataMessage();
+        }
+        
+        addSectionTitle('Alertas CTI');
+        addIntroductoryText('Las alertas de Cyber Threat Intelligence son notificaciones que informan sobre amenazas cibernéticas identificadas, como vulnerabilidades o ataques activos. La importancia de estas alertas es su capacidad para comunicar información crítica de manera segura y eficiente, asegurando que solo las partes adecuadas tengan acceso a la información necesaria para protegerse contra amenazas cibernéticas.');
+        if (alertasData.length > 0) {
+            [...alertasData].sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(item => renderTextItem({
+                title: `${item.titulo || 'Sin título'} (Criticidad: ${item.criticidad || 'N/A'})`,
+                details: [{ label: 'Fecha: ', value: formatDate(item.fecha) }],
+                description: item.descripcion || 'Sin descripción.',
+                url: item.url
+            }));
+        } else { 
+            addNoDataMessage();
+        }
+
+        addSectionTitle('Recomendaciones para las Organizaciones');
+        addIntroductoryText('La inteligencia de amenazas (CTI) permite transformar datos en acciones defensivas proactivas, reduciendo la superficie de ataque y fortaleciendo la resiliencia frente a un panorama de amenazas cada vez más sofisticado y dirigido.');
+        if (mitigacionesData.length > 0) {
+            const priorityOrder = { 'Alta': 1, 'Media': 2, 'Baja': 3 };
+            [...mitigacionesData].sort((a,b) => (priorityOrder[a.prioridad] || 4) - (priorityOrder[b.prioridad] || 4)).forEach((item, index) => renderTextItem({
+                title: `${item.titulo || 'Recomendación sin título'}`,
+                details: [{ label: 'Categoría y Prioridad: ', value: `${item.categoria || 'N/A'} | ${item.prioridad || 'N/A'}` }],
+                description: item.descripcion || 'Sin descripción.',
+                url: item.url
+            }));
+        } else { 
+            addNoDataMessage('No se han definido mitigaciones específicas en el período seleccionado.');
+        }
+        
+        addSectionTitle('Fuentes de Inteligencia');
+        addIntroductoryText('En el último mes, nuestro equipo de CTI ha realizado un exhaustivo trabajo de recopilación y análisis de fuentes abiertas, utilizando diversas herramientas y metodologías de OSINT. Nuestro objetivo ha sido identificar y evaluar los riesgos latentes que amenazan la red abierta.');
+        if (fuentesData.length > 0) {
+            [...fuentesData].sort((a,b) => new Date(b.fecha) - new Date(a.fecha)).forEach(f => {
+                renderTextItem({
+                    title: f.nombre || 'Fuente sin nombre',
+                    details: [{ label: 'Tipo: ', value: f.tipo || 'N/A' }],
+                    description: f.descripcion,
+                    url: f.url
+                });
+            });
+        } else { 
+            addNoDataMessage();
+        }
+        
+        addSectionTitle('Equipo de CTI');
+        addIntroductoryText('El contenido de este boletin, sus recomendaciones, alertas y la evaluación del riesgo que estas amenazas representa para las organizaciones interesadas fue proporcionado por el equipo de Cyber Threat Intelligence del Clan de Cyber Resilience de Accenture Buenos Aires.');
+
+        addPageFooter();
+        doc.save(`Cyber_Threat_Intelligence_Brief_${capitalizedMonth}_${reportYear}.pdf`);
+    }
+
     function generarReporteCompletoHTML() {
         const startDateStr = document.getElementById('reportStartDate').value;
         const endDateStr = document.getElementById('reportEndDate').value;
@@ -2142,205 +2458,154 @@ function getBadgeClassForZeroDayEstado(estado) {
         previewDiv.innerHTML = reporteHTML;
     }
 
-     // =============================================================================
-// NUEVAS FUNCIONES PARA GENERAR Y DESCARGAR EL CORREO HTML
-// =============================================================================
+    function descargarCorreoHTML() {
+        const startDateStr = document.getElementById('reportStartDate').value;
+        const endDateStr = document.getElementById('reportEndDate').value;
 
-/**
- * Función principal que se activa al hacer clic en el nuevo botón.
- * Orquesta la recolección de datos, el análisis y la descarga.
- */
-function descargarCorreoHTML() {
-    const startDateStr = document.getElementById('reportStartDate').value;
-    const endDateStr = document.getElementById('reportEndDate').value;
-
-    if (!startDateStr || !endDateStr) {
-        alert('Por favor, seleccione una fecha de inicio y una fecha de fin para generar el correo.');
-        return;
-    }
-    if (new Date(startDateStr) > new Date(endDateStr)) {
-        alert('La fecha de inicio no puede ser posterior a la fecha de fin.');
-        return;
-    }
-
-    // --- Filtrar los datos desde la caché ---
-    // Se usa UTC para evitar problemas de zona horaria que restan un día.
-    const sDateParts = startDateStr.split('-').map(Number);
-    const sDate = new Date(Date.UTC(sDateParts[0], sDateParts[1] - 1, sDateParts[2]));
-
-    const eDateParts = endDateStr.split('-');
-    const eDate = new Date(Date.UTC(eDateParts[0], eDateParts[1] - 1, eDateParts[2], 23, 59, 59, 999));
-
-    const filterByDate = item => {
-        if (!item.fecha) return false;
-        const itemDate = new Date(item.fecha);
-        return itemDate >= sDate && itemDate <= eDate;
-    };
-    
-    // Objeto para almacenar los datos filtrados
-    const data = {};
-    for (const key in ALL_DATA_CACHE) {
-        data[key.replace('-', '')] = (ALL_DATA_CACHE[key] || []).filter(filterByDate);
-    }
-    
-    // --- Generar y descargar el archivo ---
-    const emailHtml = generarPlantillaCorreo(data, sDate);
-    descargarArchivoHTML(emailHtml, startDateStr, endDateStr);
-}
-
-
-/**
- * Toma los datos filtrados y los inserta en la plantilla de correo.
- * @param {object} data - Objeto con los arrays de datos filtrados (incidentes, cves, etc.).
- * @param {Date} startDate - La fecha de inicio para determinar el mes y año.
- * @returns {string} - El código HTML completo y rellenado del correo.
- */
-function generarPlantillaCorreo(data, startDate) {
-    const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-    const reportMonth = monthNames[startDate.getUTCMonth()];
-    const reportYear = startDate.getUTCFullYear();
-    
-    // Lógica de análisis para el resumen ejecutivo
-    const criticalCvesCount = data.cves.filter(c => c.cvss >= 9.0).length;
-    const topSectors = [...new Set(data.incidentes.map(i => i.sector).filter(Boolean))].slice(0, 2).join(' y ');
-    const topActors = [...new Set(data.incidentes.map(i => i.actor).filter(a => a && a.toLowerCase() !== 'desconocido'))].slice(0, 2).join(', ');
-
-    // Obtener la plantilla y reemplazar los placeholders
-    let template = obtenerPlantillaString(); // Llamamos a la función que contiene el HTML
-
-    template = template.replace(/\[Mes\]/g, reportMonth);
-    template = template.replace(/\[Año\]/g, reportYear);
-    
-    // Rellenar resumen
-    template = template.replace('[Número de CVEs]', data.cves.length);
-    template = template.replace('[Número de CVEs Críticos]', criticalCvesCount);
-    template = template.replace('[Número de Incidentes]', data.incidentes.length);
-    template = template.replace('[Sectores más Afectados]', topSectors || 'diversos');
-    template = template.replace('[Actores de Amenaza Destacados]', topActors || 'varios');
-    template = template.replace('[Número de Zero-Days]', data.zerodays.length);
-    template = template.replace('[Número de Exploits]', data.exploits.length);
-
-    // Rellenar estadísticas (ya que se quitaron, los placeholders están comentados, pero es útil mantenerlos por si se reincorporan)
-    /*
-    template = template.replace('>[XX]</span><br>...Incidentes', `>${data.incidentes.length}</span><br>...Incidentes`);
-    template = template.replace('>[XX]</span><br>...Exploits', `>${data.exploits.length}</span><br>...Exploits`);
-    ...etc
-    */
-    
-    return template;
-}
-
-/**
- * Función auxiliar para descargar el contenido HTML como un archivo.
- * @param {string} htmlContent - El HTML completo del correo.
- * @param {string} startDate - Fecha de inicio para nombrar el archivo.
- * @param {string} endDate - Fecha de fin para nombrar el archivo.
- */
-function descargarArchivoHTML(htmlContent, startDate, endDate) {
-    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    const fileName = `Boletin_CTI_${startDate.replace(/-/g, '')}_al_${endDate.replace(/-/g, '')}.html`;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-
-/**
- * Contiene la plantilla de correo como un string para mantener el código organizado.
- * @returns {string}
- */
-function obtenerPlantillaString() {
-    return `
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber Threat Intelligence Brief | [Mes] [Año]</title>
-    </head>
-    <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
-
-    <table border="0" cellpadding="0" cellspacing="0" width="100%">
-        <tr>
-            <td style="padding: 20px 0 30px 0;" align="center">
-                <table align="center" border="0" cellpadding="0" cellspacing="0" width="700" style="border-collapse: collapse; background-color: #ffffff; border: 1px solid #e0e6ed; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-                    <tr>
-                        <td align="left" style="padding: 30px 30px 20px 30px; background-color: #6A3093; color: #FFFFFF;">
-                            <h1 style="margin: 0; font-size: 24px; font-family: 'Roboto', Arial, sans-serif;">Cyber Threat Intelligence Brief</h1>
-                            <p style="margin: 5px 0 0; font-size: 16px; font-family: 'Roboto', Arial, sans-serif; color: #FFFFFF;">Informe de [Mes] [Año]</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 30px 30px 20px 30px;">
-                            <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">
-                                Estimados, compartimos el resumen ejecutivo de la actividad de amenazas correspondiente al último período. El informe completo se encuentra adjunto.
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 0 30px 30px 30px;">
-                            <h2 style="font-size: 20px; color: #1c1c1c; margin: 0 0 15px 0; border-bottom: 2px solid #e0e6ed; padding-bottom: 10px;">Resumen Ejecutivo</h2>
-                            <div style="background-color: #F8F9FA; padding: 20px; border-left: 4px solid #6A3093;">
-                                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">
-                                    Análisis correspondiente al mes de <strong>[Mes] de [Año]</strong>. Durante este tiempo, se publicaron <strong>[Número de CVEs]</strong> nuevas vulnerabilidades, de las cuales <strong>[Número de CVEs Críticos]</strong> se calificaron como críticas (CVSS 9.0+). Se registraron <strong>[Número de Incidentes]</strong> incidentes relevantes, con especial afectación al sector <strong>[Sectores más Afectados]</strong>. Los grupos de amenaza más destacados fueron <strong>[Actores de Amenaza Destacados]</strong>.
-                                    <br><br>
-                                    Además, se descubrieron <strong>[Número de Zero-Days]</strong> nuevas vulnerabilidades de día cero y se publicaron <strong>[Número de Exploits]</strong> exploits con prueba de concepto.
-                                </p>
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="center" style="padding: 30px 30px 40px 30px; background-color: #F8F9FA;">
-                            <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">
-                                Para un análisis exhaustivo y el listado completo de todos los eventos, por favor revise el informe PDF completo adjunto.
-                            </p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 20px 30px 20px 30px; text-align: center; color: #888888; font-size: 12px; background-color: #e9ecef;">
-                            <p style="margin: 0;">
-                                Este reporte es clasificado como TLP:CLEAR (<a href="https://first.org/tlp/" style="color: #2574A9; text-decoration: none;">https://first.org/tlp/</a>)
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-    </body>
-    </html>
-    `;
-}
-    async function handleExcelImport(event) {
-        const file = event.target.files[0];
-        if (!file) {
+        if (!startDateStr || !endDateStr) {
+            alert('Por favor, seleccione una fecha de inicio y una fecha de fin para generar el correo.');
             return;
         }
+        if (new Date(startDateStr) > new Date(endDateStr)) {
+            alert('La fecha de inicio no puede ser posterior a la fecha de fin.');
+            return;
+        }
+
+        const sDateParts = startDateStr.split('-').map(Number);
+        const sDate = new Date(Date.UTC(sDateParts[0], sDateParts[1] - 1, sDateParts[2]));
+        const eDateParts = endDateStr.split('-');
+        const eDate = new Date(Date.UTC(eDateParts[0], eDateParts[1] - 1, eDateParts[2], 23, 59, 59, 999));
+
+        const filterByDate = item => {
+            if (!item.fecha) return false;
+            const itemDate = new Date(item.fecha);
+            return itemDate >= sDate && itemDate <= eDate;
+        };
+        
+        const data = {};
+        for (const key in ALL_DATA_CACHE) {
+            data[key.replace('-', '')] = (ALL_DATA_CACHE[key] || []).filter(filterByDate);
+        }
+        
+        const emailHtml = generarPlantillaCorreo(data, sDate);
+        descargarArchivoHTML(emailHtml, startDateStr, endDateStr);
+    }
+
+    function generarPlantillaCorreo(data, startDate) {
+        const monthNames = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+        const reportMonth = monthNames[startDate.getUTCMonth()];
+        const reportYear = startDate.getUTCFullYear();
+        
+        const criticalCvesCount = data.cves.filter(c => c.cvss >= 9.0).length;
+        const topSectors = [...new Set(data.incidentes.map(i => i.sector).filter(Boolean))].slice(0, 2).join(' y ');
+        const topActors = [...new Set(data.incidentes.map(i => i.actor).filter(a => a && a.toLowerCase() !== 'desconocido'))].slice(0, 2).join(', ');
+
+        let template = obtenerPlantillaString();
+
+        template = template.replace(/\[Mes\]/g, reportMonth);
+        template = template.replace(/\[Año\]/g, reportYear);
+        template = template.replace('[Número de CVEs]', data.cves.length);
+        template = template.replace('[Número de CVEs Críticos]', criticalCvesCount);
+        template = template.replace('[Número de Incidentes]', data.incidentes.length);
+        template = template.replace('[Sectores más Afectados]', topSectors || 'diversos');
+        template = template.replace('[Actores de Amenaza Destacados]', topActors || 'varios');
+        template = template.replace('[Número de Zero-Days]', data.zerodays.length);
+        template = template.replace('[Número de Exploits]', data.exploits.length);
+        
+        return template;
+    }
+
+    function descargarArchivoHTML(htmlContent, startDate, endDate) {
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        const fileName = `Boletin_CTI_${startDate.replace(/-/g, '')}_al_${endDate.replace(/-/g, '')}.html`;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function obtenerPlantillaString() {
+        return `
+        <!DOCTYPE html>
+        <html lang="es">
+        <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Cyber Threat Intelligence Brief | [Mes] [Año]</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
+
+        <table border="0" cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+                <td style="padding: 20px 0 30px 0;" align="center">
+                    <table align="center" border="0" cellpadding="0" cellspacing="0" width="700" style="border-collapse: collapse; background-color: #ffffff; border: 1px solid #e0e6ed; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                        <tr>
+                            <td align="left" style="padding: 30px 30px 20px 30px; background-color: #6A3093; color: #FFFFFF;">
+                                <h1 style="margin: 0; font-size: 24px; font-family: 'Roboto', Arial, sans-serif;">Cyber Threat Intelligence Brief</h1>
+                                <p style="margin: 5px 0 0; font-size: 16px; font-family: 'Roboto', Arial, sans-serif; color: #FFFFFF;">Informe de [Mes] [Año]</p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 30px 30px 20px 30px;">
+                                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">
+                                    Estimados, compartimos el resumen ejecutivo de la actividad de amenazas correspondiente al último período. El informe completo se encuentra adjunto.
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 0 30px 30px 30px;">
+                                <h2 style="font-size: 20px; color: #1c1c1c; margin: 0 0 15px 0; border-bottom: 2px solid #e0e6ed; padding-bottom: 10px;">Resumen Ejecutivo</h2>
+                                <div style="background-color: #F8F9FA; padding: 20px; border-left: 4px solid #6A3093;">
+                                    <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">
+                                        Análisis correspondiente al mes de <strong>[Mes] de [Año]</strong>. Durante este tiempo, se publicaron <strong>[Número de CVEs]</strong> nuevas vulnerabilidades, de las cuales <strong>[Número de CVEs Críticos]</strong> se calificaron como críticas (CVSS 9.0+). Se registraron <strong>[Número de Incidentes]</strong> incidentes relevantes, con especial afectación al sector <strong>[Sectores más Afectados]</strong>. Los grupos de amenaza más destacados fueron <strong>[Actores de Amenaza Destacados]</strong>.
+                                        <br><br>
+                                        Además, se descubrieron <strong>[Número de Zero-Days]</strong> nuevas vulnerabilidades de día cero y se publicaron <strong>[Número de Exploits]</strong> exploits con prueba de concepto.
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td align="center" style="padding: 30px 30px 40px 30px; background-color: #F8F9FA;">
+                                <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #333333;">
+                                    Para un análisis exhaustivo y el listado completo de todos los eventos, por favor revise el informe PDF completo adjunto.
+                                </p>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 20px 30px 20px 30px; text-align: center; color: #888888; font-size: 12px; background-color: #e9ecef;">
+                                <p style="margin: 0;">
+                                    Este reporte es clasificado como TLP:CLEAR (<a href="https://first.org/tlp/" style="color: #2574A9; text-decoration: none;">https://first.org/tlp/</a>)
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        </body>
+        </html>
+        `;
+    }
+
+    async function handleExcelImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
 
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
                 const data = new Uint8Array(e.target.result);
-                // Lee el libro de trabajo con la opción de convertir fechas de Excel a objetos Date de JS.
                 const workbook = XLSX.read(data, { type: 'array', cellDates: true });
 
-                // Mapeo de los nombres de las hojas a los endpoints de la API.
                 const sheetToEndpointMap = {
-                    'Incidentes': 'incidentes',
-                    'Exploits': 'exploits',
-                    'ZeroDays': 'zero-days',
-                    'CVEs': 'cves',
-                    'Alertas': 'alertas',
-                    'Fuentes_Intel': 'fuentes',
-                    'Mitigaciones': 'mitigaciones'
+                    'Incidentes': 'incidentes', 'Exploits': 'exploits', 'ZeroDays': 'zero-days',
+                    'CVEs': 'cves', 'Alertas': 'alertas', 'Fuentes_Intel': 'fuentes', 'Mitigaciones': 'mitigaciones'
                 };
                 
                 let importSummary = [];
 
-                // Procesa cada hoja del archivo Excel.
                 for (const sheetName of workbook.SheetNames) {
                     if (sheetToEndpointMap[sheetName]) {
                         const endpoint = sheetToEndpointMap[sheetName];
@@ -2353,15 +2618,12 @@ function obtenerPlantillaString() {
                     }
                 }
                 
-                // Una vez finalizada la importación, actualiza los datos de la aplicación.
                 await fetchAndCacheAllData();
                 
-                // Si el dashboard está activo, renderízalo de nuevo.
                 if (document.getElementById('dashboard').classList.contains('active')) {
-                    await renderDashboard();
+                    await renderDynamicDashboard();
                 }
                 
-                // Informa al usuario sobre el resultado de la importación.
                 if (importSummary.length > 0) {
                     alert('Importación completada:\n\n' + importSummary.join('\n'));
                 } else {
@@ -2372,24 +2634,15 @@ function obtenerPlantillaString() {
                 console.error('Error al importar el archivo Excel:', error);
                 alert('Ocurrió un error al procesar el archivo. Verifique que el formato sea correcto y revise la consola para más detalles.');
             } finally {
-                // Limpia el valor del input para permitir importar el mismo archivo otra vez.
                 event.target.value = '';
             }
         };
         reader.readAsArrayBuffer(file);
     }
 
-    /**
-     * Envía un array de registros a un endpoint específico de la API mediante POST.
-     * @param {string} endpoint - El endpoint de la API (ej: 'incidentes').
-     * @param {Array<Object>} registros - Un array de objetos a crear.
-     * @returns {Promise<number>} - El número de registros creados exitosamente.
-     */
     async function importarRegistros(endpoint, registros) {
         let successCount = 0;
         for (const registro of registros) {
-            // El archivo generado por la app no incluye _id, por lo que no es necesario limpiarlo.
-            // Si el archivo es externo, las columnas deben coincidir con el esquema esperado por la API.
             try {
                 const response = await fetch(`${API_BASE_URL}/${endpoint}`, {
                     method: 'POST',
