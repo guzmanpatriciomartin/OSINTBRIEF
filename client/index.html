@@ -2364,7 +2364,21 @@ async function renderExploitEpssWidget(container, widget) {
         
         addSectionTitle('Equipo de CTI');
         addIntroductoryText('El contenido de este boletin, sus recomendaciones, alertas y la evaluación del riesgo que estas amenazas representa para las organizaciones interesadas fue proporcionado por el equipo de Cyber Threat Intelligence del Clan de Cyber Resilience de Accenture Buenos Aires.');
-
+ 
+        yPos += 15; // Añade un espacio vertical
+ 
+        checkAndAddPage(30); // Comprueba si se necesita una nueva página para el contacto
+        doc.setFontSize(FONT_NORMAL);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(COLOR_GREY_TEXT);
+        
+        const contactText = 'Contactanos vía mail: ';
+        doc.text(contactText, margin, yPos);
+        
+        const textWidth = doc.getTextWidth(contactText);
+        doc.setTextColor(COLOR_LINK);
+        doc.textWithLink('Cyber_Intel_Ar@accenture.com', margin + textWidth, yPos, { url: 'mailto:Cyber_Intel_Ar@accenture.com' });
+        
         addPageFooter();
         doc.save(`Cyber_Threat_Intelligence_Brief_${capitalizedMonth}_${reportYear}.pdf`);
     }
