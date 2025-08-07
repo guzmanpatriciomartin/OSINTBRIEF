@@ -23,8 +23,6 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Opened cache');
-        // Usamos addAll con { cache: 'reload' } para asegurarnos de que no estamos cacheando
-        // versiones antiguas de las librerías si el navegador las tiene en su propio caché http.
         const requests = urlsToCache.map(url => new Request(url, { cache: 'reload' }));
         return cache.addAll(requests);
       })
@@ -48,21 +46,29 @@ self.addEventListener('activate', event => {
 });
 
 // --- EL EVENTO FETCH ES LA CLAVE DE LA CORRECCIÓN ---
-// Se ha reescrito completamente para manejar la API y la App de forma diferente.
-
 self.addEventListener('fetch', event => {
   const requestUrl = new URL(event.request.url);
 
   // ESTRATEGIA 1: Network First para las peticiones a la API.
   if (requestUrl.href.startsWith(API_BASE_URL)) {
+
+    // --- INICIO DE LA CORRECCIÓN ---
+    // Si la petición a la API no es de tipo GET (es POST, PUT, DELETE, etc.),
+    // no la procesamos con la caché. Simplemente la enviamos a la red.
+    if (event.request.method !== 'GET') {
+      event.respondWith(fetch(event.request));
+      return;
+    }
+    // --- FIN DE LA CORRECCIÓN ---
+
+    // Si la petición es GET, aplicamos la estrategia "Network First" como antes.
     event.respondWith(
-      // Intenta ir a la red primero
       fetch(event.request)
         .then(networkResponse => {
-          // Si la petición a la red tiene éxito, la guardamos en caché y la devolvemos
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME)
             .then(cache => {
+              // Esta línea ahora solo se ejecutará para peticiones GET, evitando el error.
               cache.put(event.request, responseToCache);
             });
           return networkResponse;
@@ -72,14 +78,13 @@ self.addEventListener('fetch', event => {
           return caches.match(event.request);
         })
     );
-    return; // Importante para salir de la función aquí
+    return;
   }
 
   // ESTRATEGIA 2: Cache First para todo lo demás (App Shell, librerías, etc.)
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Si se encuentra en caché, se devuelve. Si no, se va a la red a buscarlo.
         return response || fetch(event.request);
       })
   );
